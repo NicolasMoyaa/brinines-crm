@@ -1,0 +1,6 @@
+{
+  "build": { "beforeDevCommand": "pnpm dev", "beforeBuildCommand": "pnpm build", "devPath": "http://localhost:3000", "distDir": "../out" },
+  "package": { "productName": "Brinines CRM OS", "version": "1.0.0" },
+  "tauri": { "allowlist": { "notification": { "all": true }, "window": { "all": false, "open": true } }, "bundle": { "active": true, "identifier": "com.brinines.crm", "icon": ["../public/icon-512.png"] }, "windows": [{ "title": "Brinines CRM OS", "width": 1280, "height": 800 }] },
+  "_nota": "Stub DAG-2026-09-21 — no requiere Rust build aún, solo config para instalable + notificaciones nativas"
+}

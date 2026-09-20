@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
-import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles, Image as ImageIcon, Wand2, Clock, Send } from "lucide-react";
 
-// BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic)
+// BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic) — DAG-2026-09-21 i18n es + IG avatar + Contenido
 // Referencia: GoHighLevel + Close CRM | @brinines_ 201 followers | GoHighLevel all-in-one pipelines+inbox+automations flat pricing
 // Alta calidad — no html del 2000: Inter + JetBrains Mono, #0b0b0b/#121212/#a3ff12, blur, borders, motion sutil
 
 const ACCENT = "#a3ff12";
+const IG_AVATAR = process.env.NEXT_PUBLIC_IG_AVATAR_URL || "";
 
 const kpis = [
   { label: "LEADS TOTAL", value: "201", delta: "+12 hoy", sub: "IG + WhatsApp", accent: false },
@@ -52,10 +53,10 @@ const pipelines: Record<string, typeof pedidos> = {
 };
 
 const automations = [
-  { name: "Story Reply Auto DM", trigger: "story_reply", desc: "Respuesta automática a story replies con catálogo + precios", runs: 142, conv: "18%", active: true },
-  { name: "Abandono 2h", trigger: "dm_received 2h", desc: "Foto chocolate top + botón WA si no ordenó en 2h", runs: 89, conv: "12%", active: true },
-  { name: "Post-Entrega Review 48h", trigger: "order_delivered +48h", desc: "Pedir review + 10% próxima compra", runs: 27, conv: "41%", active: true },
-  { name: "Churn 21d", trigger: "last_order >21d", desc: "¿Extrañás el de chocolate? + oferta", runs: 34, conv: "9%", active: false },
+  { name: "Story Reply Auto DM", trigger: "story_reply", desc: "Respuesta automática a story replies con catálogo + precios (stock real)", runs: 142, conv: "18%", active: true },
+  { name: "Post-Entrega Review 48h", trigger: "order_delivered +48h", desc: "Pedir review + 10% próxima compra (human-in-the-loop)", runs: 27, conv: "41%", active: true },
+  { name: "Tag Automático", trigger: "mention sabor", desc: "Etiqueta automática según sabor mencionado (chocolate-lover etc)", runs: 89, conv: "—", active: true },
+  { name: "Upsell integrado", trigger: "en pedido", desc: "Sugerir 2x dentro del mismo pedido (no DM aparte) — ver calculator", runs: 34, conv: "12%", active: true },
 ];
 
 function Sidebar({ tab, setTab }: { tab: string; setTab: (v: string) => void }) {
@@ -85,22 +86,23 @@ function Sidebar({ tab, setTab }: { tab: string; setTab: (v: string) => void }) 
           <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">PRINCIPAL</div>
           <div className="space-y-1">
             <Nav id="dashboard" label="Dashboard" icon={LayoutDashboard} />
-            <Nav id="conversations" label="Conversations" icon={MessageSquare} count={3} />
-            <Nav id="contacts" label="Contacts" icon={Users} count={201} />
-            <Nav id="pipelines" label="Pipelines" icon={Kanban} />
+            <Nav id="conversations" label="Conversaciones" icon={MessageSquare} count={3} />
+            <Nav id="contacts" label="Contactos" icon={Users} count={201} />
+            <Nav id="pipelines" label="Embudo" icon={Kanban} />
           </div>
         </div>
         <div>
           <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">AUTOMATIZACIÓN</div>
           <div className="space-y-1">
-            <Nav id="automations" label="Automations" icon={Zap} count={8} />
-            <Nav id="reporting" label="Reporting" icon={BarChart3} />
-            <Nav id="calendar" label="Calendar" icon={Calendar} />
+            <Nav id="automations" label="Automatizaciones" icon={Zap} count={8} />
+            <Nav id="reporting" label="Reportes" icon={BarChart3} />
+            <Nav id="calendar" label="Calendario" icon={Calendar} />
+            <Nav id="contenido" label="Contenido" icon={ImageIcon} />
           </div>
         </div>
         <div className="mx-1 mt-6 rounded-[14px] bg-[#151515] border border-[#232323] p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold tracking-wide text-[#9a9a9a]">WHATSAPP USAGE</span>
+            <span className="text-[11px] font-bold tracking-wide text-[#9a9a9a]">USO WHATSAPP</span>
             <span className="text-[10px] mono text-[#666]">78%</span>
           </div>
           <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
@@ -128,6 +130,27 @@ export default function BrininesCRM() {
   const [waConnected, setWaConnected] = useState(false);
   const [toast, setToast] = useState("");
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(""), 2200); };
+  // Contenido tab state
+  const [saborGen, setSaborGen] = useState("chocolate");
+  const [tonoGen, setTonoGen] = useState("cordial");
+  const [previewCopy, setPreviewCopy] = useState("");
+  const [generando, setGenerando] = useState(false);
+
+  const generarCopy = async () => {
+    setGenerando(true);
+    // Stock-aware stub: si stock 0 no sugerir (simula obtenerContextoComercial)
+    // En prod llama lib/engine/contenido.ts → Gemini con veracidad + stock check
+    await new Promise(r => setTimeout(r, 700));
+    const copies: Record<string, string> = {
+      chocolate: tonoGen === "humor" ? "¿Antojo de chocolate? Este budín doble no perdona 😏 — horneado hoy en Tucumán, 3 cuotas sin interés. ¿Te guardo uno?" : "Chocolate doble, húmedo y 100% artesanal 🍫 Horneamos hoy en Tucumán — pedí antes de las 18h y retirá a las 19h. ¡Te esperamos!",
+      limon: "Limoncito glaseado fresco 🍋 Ideal para el calor tucumano — liviano, esponjoso y con mucho limón natural. Stock: hoy 10 unidades.",
+      "banana-chocolate": "Banana + chocolate, la dupla que no falla 🍌🍫 — dulce justo, sin exceso. Horneado esta mañana. ¿Cuántos te guardo?",
+      vainilla: "Tradicional de vainilla — el favorito de los clásicos ✨ Simple, esponjoso y rendidor. Perfecto para compartir.",
+      mixto: "Mix de sabores: probá todos y encontrá tu favorito 🎨 — 4 porciones, 4 sabores, una sola tentación.",
+    };
+    setPreviewCopy(copies[saborGen] || copies.chocolate);
+    setGenerando(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-[#e8e8e8] antialiased overflow-hidden selection:bg-[#a3ff12]/30">
@@ -143,14 +166,18 @@ export default function BrininesCRM() {
           <div className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-[#1c1c1c] bg-[#0f0f0f]/80 backdrop-blur sticky top-0 z-20">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-3">
-                <img src="https://i.pravatar.cc/100?img=32" alt="brinines" className="w-8 h-8 rounded-full object-cover hidden sm:block" />
+                {IG_AVATAR ? (
+                  <img src={IG_AVATAR} alt="Brinines @brinines_" className="w-8 h-8 rounded-full object-cover hidden sm:block border border-[#232323]" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-white text-black grid place-items-center font-black text-[13px] hidden sm:grid border border-[#232323]" title="Brinines @brinines_">B</div>
+                )}
                 <div className="leading-none">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-[13.5px]">BRININES CRM OS v1 - GHL Clone</span>
-                    <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#262626] text-[#8a8a8a] mono">201 followers</span>
+                    <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#262626] text-[#8a8a8a] mono">201 seguidores</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
-                  <div className="text-[11px] text-[#6a6a6a] mt-1 hidden sm:flex items-center gap-1.5"><span>Tucumán • Budines artesanales</span><span className="opacity-40">•</span><span className="text-[#8a8a8a]">GoHighLevel aesthetic • Wa 5493813562078</span></div>
+                  <div className="text-[11px] text-[#6a6a6a] mt-1 hidden sm:flex items-center gap-1.5"><span>Tucumán • Budines artesanales</span><span className="opacity-40">•</span><span className="text-[#8a8a8a]">Estética GoHighLevel • Wa 5493813562078</span></div>
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-2 ml-6 pl-6 border-l border-[#1e1e1e]">
@@ -161,9 +188,9 @@ export default function BrininesCRM() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2 text-[11px] mono text-[#5a5a5a] bg-[#111] border border-[#1e1e1e] px-3 py-1.5 rounded-full"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Pipeline activo</div>
+              <div className="hidden md:flex items-center gap-2 text-[11px] mono text-[#5a5a5a] bg-[#111] border border-[#1e1e1e] px-3 py-1.5 rounded-full"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Embudo activo</div>
               <button onClick={() => { setWaConnected(!waConnected); showToast(waConnected ? "WhatsApp desconectado" : "WhatsApp conectado ✓ Brinines listo"); }} className={`h-9 px-4 rounded-full text-[13px] font-bold tracking-tight flex items-center gap-2 border transition ${waConnected ? "bg-[#1a1a1a] border-[#2a2a2a] text-white" : "text-black border-transparent"}`} style={waConnected ? {} : { background: ACCENT }}>
-                {waConnected ? "● WhatsApp conectado" : "◍ Connect WhatsApp"}
+                {waConnected ? "● WhatsApp conectado" : "◍ Conectar WhatsApp"}
               </button>
             </div>
           </div>
@@ -195,7 +222,7 @@ export default function BrininesCRM() {
                     <div className="flex items-center justify-between mb-5">
                       <div>
                         <div className="font-bold text-[14px] tracking-tight">Ventas por sabor</div>
-                        <div className="text-[11px] text-[#666] mt-0.5">Últimos 30 días • 27 budines • @brinines_ 201 followers</div>
+                        <div className="text-[11px] text-[#666] mt-0.5">Últimos 30 días • 27 budines • @brinines_ 201 seguidores</div>
                       </div>
                       <span className="text-[10px] mono px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#222] text-[#777]">TUC • BRININES</span>
                     </div>
@@ -208,7 +235,7 @@ export default function BrininesCRM() {
                       ))}
                     </div>
                     <div className="mt-5 grid grid-cols-3 gap-3">
-                      <div className="rounded-xl bg-[#0f0f0f] border border-[#1c1c1c] p-3"><div className="text-[10px] text-[#5a5a5a] font-bold tracking-wide">TOP HORA</div><div className="text-[13px] font-semibold mt-1">18:00-20:00</div><div className="text-[11px] text-[#666]">Retiros tarde</div></div>
+                      <div className="rounded-xl bg-[#0f0f0f] border border-[#1c1c1c] p-3"><div className="text-[10px] text-[#5a5a5a] font-bold tracking-wide">HORA PICO</div><div className="text-[13px] font-semibold mt-1">18:00-20:00</div><div className="text-[11px] text-[#666]">Retiros tarde</div></div>
                       <div className="rounded-xl bg-[#0f0f0f] border border-[#1c1c1c] p-3"><div className="text-[10px] text-[#5a5a5a] font-bold tracking-wide">TICKET PROM</div><div className="text-[13px] font-semibold mt-1">$5.400 ARS</div><div className="text-[11px] text-[#666]">+ envío</div></div>
                       <div className="rounded-xl p-3 border" style={{ background: `${ACCENT}14`, borderColor: `${ACCENT}30` }}><div className="text-[10px] font-bold tracking-wide" style={{ color: ACCENT }}>MÁS PEDIDO</div><div className="text-[13px] font-bold mt-1 text-white">Chocolate</div><div className="text-[11px]" style={{ color: ACCENT }}>44% ventas • 12 likes</div></div>
                     </div>
@@ -217,7 +244,7 @@ export default function BrininesCRM() {
                   <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5 flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <span className="font-bold text-[14px]">Últimos pedidos</span>
-                      <button onClick={() => setTab("pipelines")} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] hover:text-white">Ver pipeline →</button>
+                      <button onClick={() => setTab("pipelines")} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] hover:text-white">Ver embudo →</button>
                     </div>
                     <div className="space-y-2.5">
                       {pedidos.map(p => (
@@ -242,11 +269,11 @@ export default function BrininesCRM() {
             {tab === "contacts" && (
               <div className="p-4 lg:p-6 max-w-[1320px] mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Contacts</div><div className="text-[12px] text-[#666] mt-1">201 contactos • 8 VIP • Tucumán base • LTV real</div></div>
+                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Contactos</div><div className="text-[12px] text-[#666] mt-1">201 contactos • 8 VIP • Tucumán base • LTV real</div></div>
                   <div className="flex items-center gap-2">
                     <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar por nombre, tag, sabor..." className="h-9 w-[280px] bg-[#121212] border border-[#1e1e1e] rounded-full pl-9 pr-3 text-[13px] placeholder:text-[#555] outline-none focus:border-[#2a2a2a]" /></div>
-                    <button onClick={() => showToast("Export CSV generado")} className="h-9 px-4 rounded-full bg-[#1a1a1a] border border-[#262626] text-[13px] font-medium">Export</button>
-                    <button onClick={() => showToast("Nuevo contacto demo creado")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ New contact</button>
+                    <button onClick={() => showToast("Export CSV generado")} className="h-9 px-4 rounded-full bg-[#1a1a1a] border border-[#262626] text-[13px] font-medium">Exportar</button>
+                    <button onClick={() => showToast("Nuevo contacto demo creado")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ Nuevo contacto</button>
                   </div>
                 </div>
                 <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] overflow-hidden overflow-x-auto">
@@ -262,7 +289,7 @@ export default function BrininesCRM() {
               <div className="flex h-[calc(100vh-64px)]">
                 <div className="w-[320px] shrink-0 border-r border-[#1c1c1c] bg-[#0f0f0f] hidden md:flex flex-col">
                   <div className="p-3 border-b border-[#1c1c1c] flex items-center gap-2">
-                    <div className="flex-1 relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Search conversations..." className="h-8 w-full bg-[#121212] border border-[#1e1e1e] rounded-full pl-8 pr-3 text-[12px] placeholder:text-[#555] outline-none" /></div>
+                    <div className="flex-1 relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar conversaciones..." className="h-8 w-full bg-[#121212] border border-[#1e1e1e] rounded-full pl-8 pr-3 text-[12px] placeholder:text-[#555] outline-none" /></div>
                     <button className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[12px]">◧</button>
                   </div>
                   <div className="flex-1 overflow-y-auto">
@@ -281,8 +308,8 @@ export default function BrininesCRM() {
                 </div>
                 <div className="flex-1 flex flex-col bg-[#0b0b0b] min-w-0">
                   <div className="h-[56px] border-b border-[#1c1c1c] bg-[#0f0f0f] flex items-center justify-between px-4">
-                    <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">LH</div><div><div className="text-[13px] font-bold flex items-center gap-2">Lucía H. <span className="w-2 h-2 rounded-full bg-emerald-400" /></div><div className="text-[11px] text-[#666]">3815550124 • Chocolate lover</div></div></div>
-                    <div className="flex items-center gap-1.5"><button onClick={() => showToast("Llamada WhatsApp iniciada")} className="h-8 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium flex items-center gap-1"><Phone size={12} /> Call</button><button onClick={() => showToast("Pedido movido a Pagado")} className="h-8 px-3 rounded-full text-black font-bold text-[11px] flex items-center gap-1" style={{ background: ACCENT }}><Check size={12} /> Marcar Pagado</button></div>
+                    <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">LH</div><div><div className="text-[13px] font-bold flex items-center gap-2">Lucía H. <span className="w-2 h-2 rounded-full bg-emerald-400" /></div><div className="text-[11px] text-[#666]">3815550124 • Amante del chocolate</div></div></div>
+                    <div className="flex items-center gap-1.5"><button onClick={() => showToast("Llamada WhatsApp iniciada")} className="h-8 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium flex items-center gap-1"><Phone size={12} /> Llamar</button><button onClick={() => showToast("Pedido movido a Pagado")} className="h-8 px-3 rounded-full text-black font-bold text-[11px] flex items-center gap-1" style={{ background: ACCENT }}><Check size={12} /> Marcar Pagado</button></div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-5 space-y-3">
                     {[{from:"them",text:"Hola! Quiero 3 de chocolate y 2 de limón, zona Centro",time:"14:22"},{from:"me",text:"¡Dale Lucía! 😊 Te armé el pedido:\n3 x chocolate ($7000) = $21000\n2 x limon ($5500) = $11000\nSubtotal: $32000\nEnvío CENTRO: GRATIS 🎉\n────────────────────────\nTotal: $32000\n¿Confirmo?",time:"14:23"},{from:"system",text:"Lucía confirmó — pedido #PED-42 • $32.000 • Pagado",time:"14:24"}].map((m,i)=>(
@@ -293,7 +320,7 @@ export default function BrininesCRM() {
                     ))}
                   </div>
                   <div className="p-3 border-t border-[#1c1c1c] bg-[#0f0f0f]">
-                    <div className="flex items-center gap-2"><div className="flex-1 h-10 bg-[#121212] border border-[#1e1e1e] rounded-full flex items-center px-1"><input placeholder="Escribe un mensaje... usa / para snippets" className="flex-1 bg-transparent outline-none text-[13px] px-3 placeholder:text-[#555]" /><button onClick={() => showToast("Mensaje enviado")} className="w-8 h-8 rounded-full grid place-items-center text-black font-bold" style={{ background: ACCENT }}>↗</button></div></div>
+                    <div className="flex items-center gap-2"><div className="flex-1 h-10 bg-[#121212] border border-[#1e1e1e] rounded-full flex items-center px-1"><input placeholder="Escribe un mensaje... usa / para atajos" className="flex-1 bg-transparent outline-none text-[13px] px-3 placeholder:text-[#555]" /><button onClick={() => showToast("Mensaje enviado")} className="w-8 h-8 rounded-full grid place-items-center text-black font-bold" style={{ background: ACCENT }}>↗</button></div></div>
                     <div className="flex gap-1.5 mt-2">{["Precio $4.600","Alias brinines.mp","Retiro 18hs","Gracias 🥐"].map(s => <button key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-[#151515] border border-[#222] text-[#777] hover:text-[#c8c8c8]">{s}</button>)}</div>
                   </div>
                 </div>
@@ -303,8 +330,8 @@ export default function BrininesCRM() {
             {tab === "pipelines" && (
               <div className="p-4 lg:p-6">
                 <div className="flex items-center justify-between mb-5 max-w-[1600px] mx-auto">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Pipelines • Orders</div><div className="text-[12px] text-[#666] mt-1">Kanban Close CRM • Nuevo → Cotizado → Pagado → Horneando → Entregado</div></div>
-                  <div className="flex items-center gap-2"><span className="text-[11px] mono text-[#666] bg-[#121212] border border-[#1e1e1e] px-3 py-1.5 rounded-full">Total pipeline: $50.600 ARS</span><button onClick={() => showToast("Nuevo pedido creado")} className="h-8 px-3 rounded-full text-black font-bold text-[12px] flex items-center gap-1" style={{ background: ACCENT }}><Plus size={14} /> Nuevo pedido</button></div>
+                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Embudo • Pedidos</div><div className="text-[12px] text-[#666] mt-1">Kanban Close CRM • Nuevo → Cotizado → Pagado → Horneando → Entregado</div></div>
+                  <div className="flex items-center gap-2"><span className="text-[11px] mono text-[#666] bg-[#121212] border border-[#1e1e1e] px-3 py-1.5 rounded-full">Total en embudo: $50.600 ARS</span><button onClick={() => showToast("Nuevo pedido creado")} className="h-8 px-3 rounded-full text-black font-bold text-[12px] flex items-center gap-1" style={{ background: ACCENT }}><Plus size={14} /> Nuevo pedido</button></div>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-4 max-w-[1600px] mx-auto">
                   {Object.entries(pipelines).map(([col, items]) => (
@@ -331,7 +358,7 @@ export default function BrininesCRM() {
             {tab === "automations" && (
               <div className="p-4 lg:p-6 max-w-[1100px] mx-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Automations</div><div className="text-[12px] text-[#666] mt-1">8 flujos activos • 549 runs este mes • $72k atribuido • GHL Clone</div></div>
+                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Automatizaciones</div><div className="text-[12px] text-[#666] mt-1">4 flujos MOTOR-fidelity • 292 ejecuciones este mes • $48k atribuido • GHL Clone</div></div>
                   <button onClick={() => showToast("Nueva automatización creada (demo)")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ Nueva automatización</button>
                 </div>
                 <div className="space-y-3">
@@ -343,25 +370,29 @@ export default function BrininesCRM() {
                         <div className="text-[11.5px] text-[#6a6a6a] mt-1 leading-snug truncate">{a.desc}</div>
                       </div>
                       <div className="hidden md:flex items-center gap-6">
-                        <div className="text-right"><div className="text-[11px] text-[#5a5a5a] font-bold tracking-wide">RUNS</div><div className="text-[13px] font-bold mono">{a.runs}</div></div>
+                        <div className="text-right"><div className="text-[11px] text-[#5a5a5a] font-bold tracking-wide">EJECUCIONES</div><div className="text-[13px] font-bold mono">{a.runs}</div></div>
                         <div className="text-right"><div className="text-[11px] text-[#5a5a5a] font-bold tracking-wide">CONV</div><div className="text-[13px] font-bold mono" style={{ color: a.active?ACCENT:"#666" }}>{a.conv}</div></div>
                         <div className={`w-[44px] h-[26px] rounded-full p-[2px] flex ${a.active?"justify-end":"justify-start bg-[#1e1e1e] border border-[#2a2a2a]"}`} style={a.active?{background:ACCENT}:{}}><div className="w-[22px] h-[22px] rounded-full bg-white shadow-sm" style={a.active?{}:{background:"#3a3a3a"}} /></div>
                       </div>
                     </div>
                   ))}
                 </div>
+                <div className="mt-6 rounded-[14px] bg-[#0f1a0a] border border-[#1e3a0f] p-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#12210a] border border-[#1e3a0f] grid place-items-center text-[12px]">🛡️</div>
+                  <div><div className="text-[12px] font-bold text-[#a3ff12]">MOTOR fidelity — 4 invasivas desactivadas</div><div className="text-[11px] text-[#8ab66a] mt-1">Churn 21d • Abandono 2h • Recurrencia 14d fija • Bienvenida masiva → reemplazadas por Segmentación silenciosa + Experimentos + Contenido orgánico. Filosofía Tucumán: no forzar venta.</div></div>
+                </div>
               </div>
             )}
 
             {tab === "reporting" && (
               <div className="p-4 lg:p-6 max-w-[1100px] mx-auto space-y-6">
-                <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Reporting</div><div className="text-[12px] text-[#666] mt-1">Atribución por automatización y canal • Últimos 30 días</div></div>
+                <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Reportes</div><div className="text-[12px] text-[#666] mt-1">Atribución por automatización y canal • Últimos 30 días</div></div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">INGRESO POR AUTOMATIZACIÓN</div><div className="text-[28px] font-extrabold mt-2">$48.300 <span className="text-[14px] font-medium text-[#666]">ARS</span></div><div className="text-[11px] text-[#666] mt-1">67% del total viene de autos</div></div>
                   <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">CANAL ORIGEN</div><div className="mt-4 space-y-3"><div><div className="flex justify-between text-[12px] mb-1"><span>Instagram Story</span><span className="mono">58%</span></div><div className="h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width:"58%", background: ACCENT }}/></div></div><div><div className="flex justify-between text-[12px] mb-1"><span>WhatsApp Directo</span><span className="mono">27%</span></div><div className="h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden"><div className="h-full bg-white rounded-full" style={{ width:"27%" }}/></div></div></div></div>
                   <div className="rounded-[16px] p-5 border text-black" style={{ background: ACCENT, borderColor: `${ACCENT}50` }}><div className="text-[11px] font-bold tracking-wide text-black/60">RESUMEN MES</div><div className="text-[14px] font-bold mt-3 leading-snug">Tu automatización #1 (Story Reply) generó 34 leads extra sin esfuerzo.</div><button onClick={() => setTab("automations")} className="mt-4 h-8 px-4 rounded-full bg-black text-white text-[12px] font-bold">Revisar autos →</button></div>
                 </div>
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="font-bold text-[13px]">Funnel completo</div><div className="mt-4 flex flex-col md:flex-row items-stretch gap-3">{[{label:"Visitas perfil",v:"1.240"},{label:"DMs",v:"201"},{label:"Cotizados",v:"67"},{label:"Pagados",v:"32"},{label:"Entregados",v:"27"}].map((f,i)=>(
+                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="font-bold text-[13px]">Embudo completo</div><div className="mt-4 flex flex-col md:flex-row items-stretch gap-3">{[{label:"Visitas perfil",v:"1.240"},{label:"DMs",v:"201"},{label:"Cotizados",v:"67"},{label:"Pagados",v:"32"},{label:"Entregados",v:"27"}].map((f,i)=>(
                   <div key={f.label} className="flex-1">
                     <div className="text-[11px] text-[#666]">{f.label}</div><div className="text-[16px] font-bold mono mt-1">{f.v}</div><div className="h-1.5 bg-[#1a1a1a] rounded-full mt-2 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.max(24, 100 - i*18)}%`, background: i===3?ACCENT:"#fff" }}/></div>
                   </div>
@@ -371,7 +402,7 @@ export default function BrininesCRM() {
 
             {tab === "calendar" && (
               <div className="p-4 lg:p-6 max-w-[1100px] mx-auto">
-                <div className="text-[22px] font-extrabold tracking-[-0.02em]">Calendar • Horneadas</div><div className="text-[12px] text-[#666] mt-1 mb-6">Agenda de producción y entregas • Vista semanal</div>
+                <div className="text-[22px] font-extrabold tracking-[-0.02em]">Calendario • Horneadas</div><div className="text-[12px] text-[#666] mt-1 mb-6">Agenda de producción y entregas • Vista semanal • Google Calendar con alarma 60+10 min</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
                   {[{day:"Lun 11",slots:[{time:"18:00",name:"Lucía H.",flavor:"Chocolate"}]},{day:"Mar 12",slots:[{time:"17:30",name:"Martina P.",flavor:"Banana"},{time:"19:00",name:"Camila N.",flavor:"2x Choco"}]},{day:"Mié 13",slots:[]},{day:"Jue 14",slots:[{time:"18:30",name:"Florencia T.",flavor:"3x Choco",hl:true}]},{day:"Vie 15",slots:[{time:"16:00",name:"Sofia G.",flavor:"Tradicional"}]},{day:"Sáb 16",slots:[{time:"10:00",name:"Agustina M.",flavor:"2x Limón"},{time:"11:30",name:"Valentina D.",flavor:"Limón"}]},{day:"Dom 17",slots:[],closed:true}].map(d => (
                     <div key={d.day} className={`rounded-[14px] border p-3 min-h-[220px] ${d.closed?"bg-[#0a0a0a] border-[#141414]":"bg-[#121212] border-[#1e1e1e]"}`}>
@@ -382,12 +413,71 @@ export default function BrininesCRM() {
                     </div>
                   ))}
                 </div>
+                <div className="mt-4 rounded-xl bg-[#0f1a0a] border border-[#1e3a0f] px-4 py-3 flex items-center gap-2 text-[11px] text-[#8ab66a]"><Clock size={14} /> Google Calendar conectado — cada horneada crea evento con alarma 60 min + 10 min (popup nativo iPhone).</div>
               </div>
             )}
+
+            {tab === "contenido" && (
+              <div className="p-4 lg:p-6 max-w-[1100px] mx-auto space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em] flex items-center gap-2"><ImageIcon size={22} /> Contenido</div><div className="text-[12px] text-[#666] mt-1">Calendario editorial + generador IA stock-aware • Rescatado de Sheets Contenidos/Estrategias • IG Graph queue</div></div>
+                  <span className="text-[11px] mono px-3 py-1.5 rounded-full bg-[#121212] border border-[#1e1e1e] text-[#666]">IGQ token → POST /{`{ig_user_id}`}/media</span>
+                </div>
+
+                {/* Generador */}
+                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
+                  <div className="flex items-center gap-2 mb-4"><Wand2 size={16} className="text-[#a3ff12]" /><span className="font-bold text-[14px]">Generador con IA</span><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#777] mono">stock-aware • no inventa</span></div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div><label className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">SABOR</label><select value={saborGen} onChange={e=>setSaborGen(e.target.value)} className="mt-1 w-full h-9 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl px-3 text-[13px] outline-none"><option value="chocolate">Chocolate doble — BRN-CHO-04</option><option value="limon">Limón glaseado — BRN-LIM-01</option><option value="banana-chocolate">Banana con chocolate — BRN-BAN-03</option><option value="vainilla">Tradicional vainilla — BRN-TRA-02</option><option value="mixto">Mix — BRN-MIX-05</option></select></div>
+                    <div><label className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">TONO</label><select value={tonoGen} onChange={e=>setTonoGen(e.target.value)} className="mt-1 w-full h-9 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl px-3 text-[13px] outline-none"><option value="cordial">Cordial</option><option value="humor">Con humor</option><option value="directo">Directo</option></select></div>
+                    <div className="flex items-end"><button onClick={generarCopy} disabled={generando} className="w-full h-9 rounded-xl text-black font-bold text-[13px] flex items-center justify-center gap-2 disabled:opacity-60" style={{background:ACCENT}}>{generando ? "Generando..." : <><Wand2 size={14}/> Generar copy</>}</button></div>
+                  </div>
+                  {previewCopy && (
+                    <div className="mt-4 rounded-xl bg-[#0f0f0f] border border-[#1e1e1e] p-4">
+                      <div className="text-[11px] font-bold tracking-wide text-[#5a5a5a] mb-2">PREVIEW COPY</div>
+                      <p className="text-[13px] leading-relaxed text-[#d8d8d8]">{previewCopy}</p>
+                      <div className="mt-3 flex gap-2"><button onClick={()=>showToast("Contenido programado → IG Graph queue (stub)")} className="h-8 px-4 rounded-full text-black font-bold text-[12px] flex items-center gap-1.5" style={{background:ACCENT}}><Clock size={12}/> Programar</button><button onClick={()=>showToast("Publicado ahora (demo)")} className="h-8 px-4 rounded-full bg-[#1a1a1a] border border-[#232323] text-[12px] font-medium flex items-center gap-1.5"><Send size={12}/> Publicar ahora</button></div>
+                      <p className="mt-2 text-[10px] mono text-[#444]">lib/engine/contenido.ts → obtenerContextoComercial() verifica stock antes de sugerir. Si stock 0 no programa. Guardado en contenidos {`{borrador/programado/publicado}`}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Calendario editorial week */}
+                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
+                  <div className="flex items-center justify-between mb-4"><span className="font-bold text-[14px]">Calendario editorial — esta semana</span><span className="text-[11px] mono text-[#666] bg-[#0f0f0f] border border-[#1e1e1e] px-2 py-1 rounded-full">Lun → Dom</span></div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                    {[
+                      {day:"Lun", sabor:"Chocolate", estado:"publicado", likes:12},
+                      {day:"Mar", sabor:"—", estado:"vacio"},
+                      {day:"Mié", sabor:"Limón", estado:"programado"},
+                      {day:"Jue", sabor:"Banana", estado:"borrador"},
+                      {day:"Vie", sabor:"Mix", estado:"programado"},
+                      {day:"Sáb", sabor:"Chocolate", estado:"borrador"},
+                      {day:"Dom", sabor:"—", estado:"cerrado"},
+                    ].map(d => (
+                      <div key={d.day} className={`rounded-[14px] border p-3 min-h-[140px] ${d.estado==="cerrado"?"bg-[#0a0a0a] border-[#141414]":d.estado==="publicado"?"bg-[#0f1a0a] border-[#1e3a0f]":d.estado==="programado"?"bg-[#0f0f0f] border-[#1e3a0f]":"bg-[#0f0f0f] border-[#1e1e1e]"}`}>
+                        <div className="text-[11px] font-bold tracking-wide flex items-center justify-between">{d.day.toUpperCase()} {d.estado==="publicado" && <span className="w-2 h-2 rounded-full bg-emerald-400"/>}</div>
+                        <div className="mt-3">
+                          {d.sabor==="—" ? <span className="text-[11px] text-[#444]">{d.estado==="cerrado"?"Cerrado":"Sin post"}</span> : (
+                            <>
+                              <div className="w-full h-16 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[11px] text-[#666]">{d.sabor}</div>
+                              <div className="mt-2 text-[11px] font-medium">{d.sabor}</div>
+                              <span className={`mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-bold border ${d.estado==="publicado"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":d.estado==="programado"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#777]"}`}>{d.estado.toUpperCase()}</span>
+                              {d.likes && <div className="mt-1 text-[10px] mono text-[#666]">♥ {d.likes} • reach 210</div>}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
           <div className="h-6 border-t border-[#141414] bg-[#0a0a0a] flex items-center justify-between px-4 text-[10px] mono text-[#3a3a3a]">
             <span>BRININES CRM v1 • GoHighLevel Clone • Dark Premium • $97/mo aesthetic • bru-brutal + Inter</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> All systems operational • Tucumán</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Todos los sistemas operativos • Tucumán</span>
           </div>
         </div>
       </div>
