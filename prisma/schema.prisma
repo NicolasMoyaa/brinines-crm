@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id          String        @id @default(cuid())
+  phone       String        @unique
+  ig_handle   String?
+  name        String?
+  city        String        @default("San Miguel de Tucumán")
+  first_seen  DateTime      @default(now())
+  last_order  DateTime?
+  total_orders Int          @default(0)
+  ltv         Decimal       @default(0)
+  segment     String        @default("nuevo")
+  tags        String[]
+  orders      Order[]
+  interactions Interaction[]
+}
+
+model Product {
+  id         String  @id @default(cuid())
+  sku        String  @unique
+  nombre     String
+  sabor      String
+  precio     Decimal
+  costo      Decimal
+  stock      Int     @default(0)
+  activo     Boolean @default(true)
+  imagen_url String?
+  ig_avg_likes Int @default(0)
+  items OrderItem[]
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  customer_id String
+  customer    Customer    @relation(fields: [customer_id], references: [id])
+  status      String
+  source      String
+  total       Decimal
+  created_at  DateTime    @default(now())
+  items       OrderItem[]
+  events      Event[]
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order_id   String
+  order      Order   @relation(fields: [order_id], references: [id])
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id])
+  qty        Int
+  unit_price Decimal
+}
+
+model Interaction {
+  id          String    @id @default(cuid())
+  customer_id String?
+  customer    Customer? @relation(fields: [customer_id], references: [id])
+  platform    String
+  type        String
+  content     String
+  sentiment   String?
+  created_at  DateTime  @default(now())
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  customer_id String
+  order_id    String?
+  name        String
+  payload     Json?
+  created_at  DateTime @default(now())
+  order       Order?   @relation(fields: [order_id], references: [id])
+}
+
+model Automation {
+  id            String  @id @default(cuid())
+  name          String
+  trigger_event String
+  condition     Json
+  action        String
+  template_id   String?
+  active        Boolean @default(true)
+  runs          Int     @default(0)
+  conversions   Int     @default(0)
+  experiment_id String?
+}
+
+model Experiment {
+  id         String  @id @default(cuid())
+  name       String
+  hypothesis String
+  variant_a  Json
+  variant_b  Json
+  winner     String?
+  status     String  @default("running")
+}
