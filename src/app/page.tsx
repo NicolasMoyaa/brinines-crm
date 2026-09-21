@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles, Image as ImageIcon, Wand2, Clock, Send } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles, Image as ImageIcon, Wand2, Clock, Send, Menu, X } from "lucide-react";
 
 // BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic) — DAG-2026-09-21 i18n es + IG avatar + Contenido
 // Referencia: GoHighLevel + Close CRM | @brinines_ 201 followers | GoHighLevel all-in-one pipelines+inbox+automations flat pricing
@@ -127,6 +127,7 @@ function Sidebar({ tab, setTab }: { tab: string; setTab: (v: string) => void }) 
 
 export default function BrininesCRM() {
   const [tab, setTab] = useState("dashboard");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [waConnected, setWaConnected] = useState(false);
   const [toast, setToast] = useState("");
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(""), 2200); };
@@ -161,23 +162,73 @@ export default function BrininesCRM() {
       )}
       <div className="flex h-screen">
         <Sidebar tab={tab} setTab={setTab} />
+        {/* Mobile drawer overlay */}
+        {mobileOpen && <div onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/50 z-40 lg:hidden" />}
+        {/* Mobile drawer sidebar */}
+        <div className={`fixed left-0 top-0 h-full w-[280px] z-50 bg-[#0f0f0f] border-r border-[#1c1c1c] flex flex-col transition-transform duration-300 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+          <div className="h-[64px] flex items-center gap-3 px-5 border-b border-[#1c1c1c] shrink-0">
+            <div className="w-8 h-8 rounded-[9px] bg-white text-black grid place-items-center font-black text-[15px] tracking-tighter">B</div>
+            <div className="leading-none flex-1">
+              <div className="font-extrabold text-[14px] tracking-[-0.02em]">BRININES</div>
+              <div className="text-[10px] tracking-[0.14em] text-[#6a6a6a] font-semibold mt-[2px]">CRM • V1 GHL CLONE</div>
+            </div>
+            <button onClick={() => setMobileOpen(false)} className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[#8a8a8a]"><X size={14} /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-6">
+            <div>
+              <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">PRINCIPAL</div>
+              <div className="space-y-1">
+                {[
+                  {id:"dashboard",label:"Dashboard",Icon:LayoutDashboard},
+                  {id:"conversations",label:"Conversaciones",Icon:MessageSquare,count:3},
+                  {id:"contacts",label:"Contactos",Icon:Users,count:201},
+                  {id:"pipelines",label:"Embudo",Icon:Kanban},
+                ].map(({id,label,Icon,count}) => {
+                  const active = tab===id;
+                  return <button key={id} onClick={()=>{setTab(id);setMobileOpen(false);}} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}><Icon size={16} className={active?"opacity-100":"opacity-70"}/><span className="flex-1 text-left">{label}</span>{count!==undefined && <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${active?"bg-white text-black":"bg-[#222] text-[#777]"}`}>{count}</span>}</button>;
+                })}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">AUTOMATIZACIÓN</div>
+              <div className="space-y-1">
+                {[
+                  {id:"automations",label:"Automatizaciones",Icon:Zap,count:8},
+                  {id:"reporting",label:"Reportes",Icon:BarChart3},
+                  {id:"calendar",label:"Calendario",Icon:Calendar},
+                  {id:"contenido",label:"Contenido",Icon:ImageIcon},
+                ].map(({id,label,Icon,count}) => {
+                  const active = tab===id;
+                  return <button key={id} onClick={()=>{setTab(id);setMobileOpen(false);}} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}><Icon size={16} className={active?"opacity-100":"opacity-70"}/><span className="flex-1 text-left">{label}</span>{count!==undefined && <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${active?"bg-white text-black":"bg-[#222] text-[#777]"}`}>{count}</span>}</button>;
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="p-3 border-t border-[#1c1c1c]">
+            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-[#151515] border border-[#232323]">
+              <div className="w-7 h-7 rounded-full bg-[#222] grid place-items-center text-[11px] font-bold">NM</div>
+              <div className="flex-1 leading-none"><div className="text-[12.5px] font-semibold">Nico Moyaa</div><div className="text-[11px] text-[#6a6a6a]">Owner • Admin</div></div>
+            </div>
+          </div>
+        </div>
         <div className="flex-1 flex flex-col min-w-0 bg-[#0b0b0b]">
           {/* Top bar */}
-          <div className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-[#1c1c1c] bg-[#0f0f0f]/80 backdrop-blur sticky top-0 z-20">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3">
+          <div className="h-[64px] shrink-0 flex items-center justify-between px-3 lg:px-6 border-b border-[#1c1c1c] bg-[#0f0f0f]/80 backdrop-blur sticky top-0 z-20">
+            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+              <button onClick={() => setMobileOpen(true)} className="lg:hidden w-9 h-9 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-white shrink-0" aria-label="Abrir menú"><Menu size={16} /></button>
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
                 {IG_AVATAR ? (
                   <img src={IG_AVATAR} alt="Brinines @brinines_" className="w-8 h-8 rounded-full object-cover hidden sm:block border border-[#232323]" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-white text-black grid place-items-center font-black text-[13px] hidden sm:grid border border-[#232323]" title="Brinines @brinines_">B</div>
                 )}
-                <div className="leading-none">
+                <div className="leading-none min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[13.5px]">BRININES CRM OS v1 - GHL Clone</span>
-                    <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#262626] text-[#8a8a8a] mono">201 seguidores</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-bold text-[13.5px] truncate"><span className="hidden sm:inline">BRININES CRM OS v1 - GHL Clone</span><span className="sm:hidden">BRININES</span></span>
+                    <span className="hidden md:inline text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#262626] text-[#8a8a8a] mono">201 seguidores</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse hidden sm:inline-block" />
                   </div>
-                  <div className="text-[11px] text-[#6a6a6a] mt-1 hidden sm:flex items-center gap-1.5"><span>Tucumán • Budines artesanales</span><span className="opacity-40">•</span><span className="text-[#8a8a8a]">Estética GoHighLevel • Wa 5493813562078</span></div>
+                  <div className="text-[11px] text-[#6a6a6a] mt-1 hidden sm:flex items-center gap-1.5"><span>Tucumán • Budines artesanales</span><span className="opacity-40">•</span><span className="text-[#8a8a8a] hidden md:inline">Estética GoHighLevel • Wa 5493813562078</span></div>
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-2 ml-6 pl-6 border-l border-[#1e1e1e]">
@@ -276,18 +327,30 @@ export default function BrininesCRM() {
                     <button onClick={() => showToast("Nuevo contacto demo creado")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ Nuevo contacto</button>
                   </div>
                 </div>
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] overflow-hidden overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[720px]">
+                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] overflow-hidden">
+                  <div className="overflow-x-auto scrollbar-thin">
+                  <table className="w-full text-left border-collapse min-w-[640px] hidden md:table">
                     <thead><tr className="text-[10px] tracking-[0.14em] font-bold text-[#5a5a5a] border-b border-[#1a1a1a]"><th className="py-3 px-5">CONTACTO</th><th className="py-3 px-3">UBICACIÓN</th><th className="py-3 px-3">TAG</th><th className="py-3 px-3">SABOR FAV</th><th className="py-3 px-3">LTV</th><th className="py-3 px-3">PEDIDOS</th><th className="py-3 px-5 text-right">ESTADO</th></tr></thead>
                     <tbody>{contacts.map(c => (<tr key={c.id} className="border-b border-[#151515] last:border-0 hover:bg-[#101010] transition"><td className="py-3.5 px-5"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">{c.avatar}</div><div><div className="text-[13px] font-semibold">{c.name}</div><div className="text-[11px] mono text-[#666]">{c.phone}</div></div></div></td><td className="py-3.5 px-3 text-[12px] text-[#8a8a8a]">{c.city}</td><td className="py-3.5 px-3"><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span></td><td className="py-3.5 px-3 text-[12px]">{c.flavor}</td><td className="py-3.5 px-3 text-[12px] font-bold mono">{c.ltv}</td><td className="py-3.5 px-3 text-[12px] mono text-[#8a8a8a]">{c.orders} • {c.last}</td><td className="py-3.5 px-5 text-right"><span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></td></tr>))}</tbody>
                   </table>
+                  </div>
+                  {/* Mobile cards 375px */}
+                  <div className="md:hidden p-3 space-y-2">
+                    {contacts.map(c => (
+                      <div key={c.id} className="rounded-xl bg-[#0f0f0f] border border-[#1e1e1e] p-3 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold shrink-0">{c.avatar}</div>
+                        <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold truncate">{c.name}</div><div className="text-[11px] mono text-[#666] truncate">{c.phone} • {c.city}</div><div className="flex items-center gap-1.5 mt-1"><span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span><span className="text-[10px] text-[#666]">{c.flavor}</span></div></div>
+                        <div className="text-right"><div className="text-[12px] font-bold mono">{c.ltv}</div><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
             {tab === "conversations" && (
-              <div className="flex h-[calc(100vh-64px)]">
-                <div className="w-[320px] shrink-0 border-r border-[#1c1c1c] bg-[#0f0f0f] hidden md:flex flex-col">
+              <div className="flex flex-col md:flex-row h-[calc(100vh-64px)]">
+                <div className="w-full md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-[#1c1c1c] bg-[#0f0f0f] flex flex-col max-h-[45vh] md:max-h-none">
                   <div className="p-3 border-b border-[#1c1c1c] flex items-center gap-2">
                     <div className="flex-1 relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar conversaciones..." className="h-8 w-full bg-[#121212] border border-[#1e1e1e] rounded-full pl-8 pr-3 text-[12px] placeholder:text-[#555] outline-none" /></div>
                     <button className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[12px]">◧</button>
@@ -333,9 +396,9 @@ export default function BrininesCRM() {
                   <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Embudo • Pedidos</div><div className="text-[12px] text-[#666] mt-1">Kanban Close CRM • Nuevo → Cotizado → Pagado → Horneando → Entregado</div></div>
                   <div className="flex items-center gap-2"><span className="text-[11px] mono text-[#666] bg-[#121212] border border-[#1e1e1e] px-3 py-1.5 rounded-full">Total en embudo: $50.600 ARS</span><button onClick={() => showToast("Nuevo pedido creado")} className="h-8 px-3 rounded-full text-black font-bold text-[12px] flex items-center gap-1" style={{ background: ACCENT }}><Plus size={14} /> Nuevo pedido</button></div>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-4 max-w-[1600px] mx-auto">
+                <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto md:snap-x md:snap-mandatory pb-4 max-w-[1600px] mx-auto overflow-visible">
                   {Object.entries(pipelines).map(([col, items]) => (
-                    <div key={col} className="w-[260px] shrink-0 rounded-[16px] bg-[#101010] border border-[#1c1c1c] flex flex-col">
+                    <div key={col} className="w-full md:w-[260px] md:shrink-0 shrink-0 snap-start rounded-[16px] bg-[#101010] border border-[#1c1c1c] flex flex-col">
                       <div className="p-3.5 flex items-center justify-between border-b border-[#1a1a1a]">
                         <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: col==="Nuevo Lead"?"#6a6a6a":col==="Cotizado"?"#8a8a8a":col==="Pagado"?ACCENT:col==="Horneando"?"#ffd21f":"#6ee7b7" }} /><span className="text-[11px] font-bold tracking-[0.08em]">{col.toUpperCase()}</span><span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] mono text-[#666]">{items.length}</span></div><span className="text-[#444]">⋯</span>
                       </div>
