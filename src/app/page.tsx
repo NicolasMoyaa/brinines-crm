@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles, Image as ImageIcon, Wand2, Clock, Send, Menu, X, Settings } from "lucide-react";
 
 // BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic) — DAG-2026-09-21 i18n es + IG avatar + Contenido
@@ -148,9 +148,84 @@ export default function BrininesCRM() {
   const [connUpstash, setConnUpstash] = useState(true);
   const [lastSync, setLastSync] = useState<Record<string,string>>({google:"—", meta:"—", wa:"—", upstash:"—"});
   const maskSecret = (v: string) => v ? `••••${v.slice(-4)}` : "••••";
-  const probarConexion = (id: string) => {
+  // --- REAL DATA wiring (Supabase + IG Graph histórica) ---
+  const [kpisReal, setKpisReal] = useState<typeof kpis | null>(null);
+  const [contactsReal, setContactsReal] = useState<typeof contacts | null>(null);
+  const [ordersReal, setOrdersReal] = useState<typeof pedidos | null>(null);
+  const [pipelinesReal, setPipelinesReal] = useState<typeof pipelines | null>(null);
+  const [conversationsReal, setConversationsReal] = useState<typeof conversations | null>(null);
+  const [inboxSource, setInboxSource] = useState<string>("loading");
+  useEffect(() => {
+    // Dashboard real
+    fetch("/api/dashboard").then(r=>r.json()).then(j=>{
+      if (!j.stub && j.kpis) {
+        const acc = j.kpis.find((k:any)=>k.label.includes("REVENUE"));
+        setKpisReal([
+          { label:"LEADS TOTAL", value: String(j.counts.customerCount), delta:"+ real DB", sub:"Supabase", accent:false },
+          { label:"ÓRDENES", value: String(j.counts.orderCount), delta:`${j.kpis[1]?.delta||""}`, sub:"DB", accent:false },
+          { label:"REVENUE", value: j.kpis.find((k:any)=>k.label==="REVENUE")?.value || `$${j.revenue}`, delta:"real DB", sub:"ARS sum", accent:true },
+          { label:"INTERACCIONES", value:String(j.counts.interactionsCount), delta:"IG+WA", sub:"históricas", accent:false },
+        ]);
+      }
+    }).catch(()=>{});
+    // Contactos reales
+    fetch("/api/customers").then(r=>r.json()).then(j=>{
+      if (!j.stub && j.data?.length) setContactsReal(j.data);
+    }).catch(()=>{});
+    // Órdenes reales -> pedidos + pipelines
+    fetch("/api/orders").then(r=>r.json()).then(j=>{
+      if (!j.stub && j.data?.length) {
+        const mapped = j.data.map((o:any)=>({ name:o.name, initials:o.initials, flavor:o.flavor, amount:o.amount, status:o.status, time:o.time }));
+        setOrdersReal(mapped);
+        const pipe: Record<string, typeof pedidos> = { "Nuevo":[], "Cotizado":[], "Pagado":[], "Horneando":[], "Entregado":[] };
+        for (const o of mapped) {
+          const k = o.status==="Nuevo Lead"?"Nuevo":o.status;
+          if (pipe[k]) pipe[k].push(o); else pipe["Nuevo"].push(o);
+        }
+        // si API trae status con espacios, normaliza
+        const pipe2: Record<string, typeof pedidos> = {};
+        for (const [k,v] of Object.entries(pipe)) if (v.length) pipe2[k]=v;
+        if (Object.keys(pipe2).length) setPipelinesReal(pipe2);
+      }
+    }).catch(()=>{});
+    // Conversaciones históricas reales (DM de @brinines_ vía Graph o DB fallback)
+    fetch("/api/inbox").then(r=>r.json()).then(j=>{
+      if (j.conversations?.length) {
+        const mapped = j.conversations.map((c:any)=>({
+          id:c.id, name:c.from||c.name||"Cliente", avatar:c.avatar||(c.from||"??").slice(0,2).toUpperCase(),
+          lastMsg:c.lastMsg||c.content||c.message||"—", time:c.time||"", tag:c.tag||c.platform||"dm", flavor:c.flavor||"—", unread:0
+        }));
+        setConversationsReal(mapped);
+        setInboxSource(j.source||"unknown");
+        if (!j.stub) showToast(`Conversaciones reales cargadas: ${mapped.length} (${j.source})`);
+      } else if (j.data?.data?.length) {
+        // Graph directo
+        const mapped = j.data.data.map((c:any)=>({ id:c.id, name:c.participants?.data?.[0]?.username || "Cliente IG", avatar:"IG", lastMsg:c.messages?.data?.[0]?.message || "—", time:"", tag:"instagram", flavor:"—", unread:0 }));
+        setConversationsReal(mapped);
+        setInboxSource("graph");
+      }
+    }).catch(()=>{});
+  }, []);
+
+  const probarConexion = async (id: string) => {
     const now = new Date().toLocaleTimeString("es-AR", {hour:"2-digit", minute:"2-digit"});
     setLastSync(s => ({...s, [id]: now}));
+    // pruebas reales
+    try {
+      if (id==="google") {
+        const r=await fetch("/api/health/meta").then(x=>x.json()).catch(()=>null);
+        showToast(r?.configured? "Meta/Health OK":"Google Calendar — stub, requiere GOOGLE_CLIENT_ID");
+        return;
+      }
+      if (id==="meta") {
+        const r=await fetch("/api/inbox").then(x=>x.json());
+        const n=r.conversations?.length||r.data?.data?.length||0;
+        showToast(r.stub? `Meta DB fallback: ${n} conversaciones históricas (conectá IG_ACCESS_TOKEN para Graph real)` : `Meta Graph vivo: ${n} conversaciones reales de @brinines_`);
+        setLastSync(s=>({...s, meta: now}));
+        return;
+      }
+      if (id==="wa") { showToast(waConnected ? "WhatsApp — conectado" : "WhatsApp — requiere WHATSAPP_TOKEN"); return; }
+    } catch {}
     const msgs: Record<string,string> = {
       google: "Google Calendar — verificación stub OK (requiere GOOGLE_CLIENT_ID para real)",
       meta: "Meta Graph — verificación stub OK (requiere IG_ACCESS_TOKEN para real)",
@@ -285,8 +360,9 @@ export default function BrininesCRM() {
             {tab === "dashboard" && (
               <div className="p-4 lg:p-6 space-y-6 max-w-[1320px] mx-auto">
                 {/* KPIs */}
+                {kpisReal && <div className="text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border border-[#1e3a0f] px-2 py-1 rounded-full mb-2 inline-block">● Datos reales Supabase • {kpisReal[0]?.value} leads, {kpisReal[1]?.value} órdenes</div>}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                  {kpis.map(k => (
+                  {(kpisReal||kpis).map(k => (
                     <div key={k.label} className="relative rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-4 overflow-hidden group hover:border-[#262626] transition">
                       <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-[40px] opacity-[0.12] -translate-y-8 translate-x-8" style={{ background: k.accent ? ACCENT : "#fff" }} />
                       <div className="flex items-start justify-between">
@@ -331,8 +407,9 @@ export default function BrininesCRM() {
                       <span className="font-bold text-[14px]">Últimos pedidos</span>
                       <button onClick={() => setTab("pipelines")} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] hover:text-white">Ver embudo →</button>
                     </div>
+                    {ordersReal && <div className="text-[10px] mono text-[#8ab66a] mb-2">● {ordersReal.length} pedidos reales desde Supabase</div>}
                     <div className="space-y-2.5">
-                      {pedidos.map(p => (
+                      {(ordersReal||pedidos).map(p => (
                         <div key={p.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#222] transition">
                           <div className="w-8 h-8 rounded-full bg-[#1a1a1a] grid place-items-center text-[11px] font-bold">{p.initials}</div>
                           <div className="flex-1 min-w-0"><div className="text-[12.5px] font-semibold truncate">{p.name} • {p.flavor}</div><div className="text-[11px] text-[#666]">{p.time} • {p.amount}</div></div>
@@ -354,7 +431,7 @@ export default function BrininesCRM() {
             {tab === "contacts" && (
               <div className="p-4 lg:p-6 max-w-[1320px] mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Contactos</div><div className="text-[12px] text-[#666] mt-1">201 contactos • 8 VIP • Tucumán base • LTV real</div></div>
+                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Contactos {contactsReal && <span className="text-[12px] font-bold px-2 py-1 rounded-full bg-[#0f1a0a] border border-[#1e3a0f] text-[#a3ff12] ml-2">● REAL {contactsReal.length} DB</span>}</div><div className="text-[12px] text-[#666] mt-1">{contactsReal? `${contactsReal.length} contactos • DB Supabase sa-east-1 • tiempo real` : "201 contactos • 8 VIP • Tucumán base • LTV real"}</div></div>
                   <div className="flex items-center gap-2">
                     <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar por nombre, tag, sabor..." className="h-9 w-[280px] bg-[#121212] border border-[#1e1e1e] rounded-full pl-9 pr-3 text-[13px] placeholder:text-[#555] outline-none focus:border-[#2a2a2a]" /></div>
                     <button onClick={() => showToast("Export CSV generado")} className="h-9 px-4 rounded-full bg-[#1a1a1a] border border-[#262626] text-[13px] font-medium">Exportar</button>
@@ -365,12 +442,12 @@ export default function BrininesCRM() {
                   <div className="overflow-x-auto scrollbar-thin">
                   <table className="w-full text-left border-collapse min-w-[640px] hidden md:table">
                     <thead><tr className="text-[10px] tracking-[0.14em] font-bold text-[#5a5a5a] border-b border-[#1a1a1a]"><th className="py-3 px-5">CONTACTO</th><th className="py-3 px-3">UBICACIÓN</th><th className="py-3 px-3">TAG</th><th className="py-3 px-3">SABOR FAV</th><th className="py-3 px-3">LTV</th><th className="py-3 px-3">PEDIDOS</th><th className="py-3 px-5 text-right">ESTADO</th></tr></thead>
-                    <tbody>{contacts.map(c => (<tr key={c.id} className="border-b border-[#151515] last:border-0 hover:bg-[#101010] transition"><td className="py-3.5 px-5"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">{c.avatar}</div><div><div className="text-[13px] font-semibold">{c.name}</div><div className="text-[11px] mono text-[#666]">{c.phone}</div></div></div></td><td className="py-3.5 px-3 text-[12px] text-[#8a8a8a]">{c.city}</td><td className="py-3.5 px-3"><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span></td><td className="py-3.5 px-3 text-[12px]">{c.flavor}</td><td className="py-3.5 px-3 text-[12px] font-bold mono">{c.ltv}</td><td className="py-3.5 px-3 text-[12px] mono text-[#8a8a8a]">{c.orders} • {c.last}</td><td className="py-3.5 px-5 text-right"><span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></td></tr>))}</tbody>
+                    <tbody>{(contactsReal||contacts).map(c => (<tr key={c.id} className="border-b border-[#151515] last:border-0 hover:bg-[#101010] transition"><td className="py-3.5 px-5"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">{c.avatar}</div><div><div className="text-[13px] font-semibold">{c.name}</div><div className="text-[11px] mono text-[#666]">{c.phone}</div></div></div></td><td className="py-3.5 px-3 text-[12px] text-[#8a8a8a]">{c.city}</td><td className="py-3.5 px-3"><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span></td><td className="py-3.5 px-3 text-[12px]">{(c as any).flavor||c.tag}</td><td className="py-3.5 px-3 text-[12px] font-bold mono">{c.ltv}</td><td className="py-3.5 px-3 text-[12px] mono text-[#8a8a8a]">{c.orders} • {c.last}</td><td className="py-3.5 px-5 text-right"><span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></td></tr>))}</tbody>
                   </table>
                   </div>
                   {/* Mobile cards 375px */}
                   <div className="md:hidden p-3 space-y-2">
-                    {contacts.map(c => (
+                    {(contactsReal||contacts).map(c => (
                       <div key={c.id} className="rounded-xl bg-[#0f0f0f] border border-[#1e1e1e] p-3 flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold shrink-0">{c.avatar}</div>
                         <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold truncate">{c.name}</div><div className="text-[11px] mono text-[#666] truncate">{c.phone} • {c.city}</div><div className="flex items-center gap-1.5 mt-1"><span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span><span className="text-[10px] text-[#666]">{c.flavor}</span></div></div>
@@ -389,8 +466,9 @@ export default function BrininesCRM() {
                     <div className="flex-1 relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar conversaciones..." className="h-8 w-full bg-[#121212] border border-[#1e1e1e] rounded-full pl-8 pr-3 text-[12px] placeholder:text-[#555] outline-none" /></div>
                     <button className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[12px]">◧</button>
                   </div>
+                  {inboxSource && <div className="px-3 py-1 text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border-b border-[#1e3a0f]">{inboxSource.includes("db") ? `● Históricas DB (${(conversationsReal||conversations).length}) — al conectar IG_ACCESS_TOKEN verás DMs reales de @brinines_ en tiempo real` : inboxSource==="graph" ? `● Graph vivo — DMs reales de @brinines_` : `● ${(conversationsReal||conversations).length} conversaciones`}</div>}
                   <div className="flex-1 overflow-y-auto">
-                    {conversations.map(c => (
+                    {(conversationsReal||conversations).map(c => (
                       <button key={c.id} className="w-full text-left p-3 flex gap-3 border-b border-[#141414] hover:bg-[#111] transition">
                         <div className="w-9 h-9 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold shrink-0">{c.avatar}</div>
                         <div className="flex-1 min-w-0 text-left">
@@ -430,8 +508,9 @@ export default function BrininesCRM() {
                   <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Embudo • Pedidos</div><div className="text-[12px] text-[#666] mt-1">Kanban Close CRM • Nuevo → Cotizado → Pagado → Horneando → Entregado</div></div>
                   <div className="flex items-center gap-2"><span className="text-[11px] mono text-[#666] bg-[#121212] border border-[#1e1e1e] px-3 py-1.5 rounded-full">Total en embudo: $50.600 ARS</span><button onClick={() => showToast("Nuevo pedido creado")} className="h-8 px-3 rounded-full text-black font-bold text-[12px] flex items-center gap-1" style={{ background: ACCENT }}><Plus size={14} /> Nuevo pedido</button></div>
                 </div>
+                {pipelinesReal && <div className="text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border border-[#1e3a0f] px-2 py-1 rounded-full mb-2 inline-block">● Embudo real Supabase • {Object.values(pipelinesReal).flat().length} pedidos</div>}
                 <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto md:snap-x md:snap-mandatory pb-4 max-w-[1600px] mx-auto overflow-visible">
-                  {Object.entries(pipelines).map(([col, items]) => (
+                  {Object.entries(pipelinesReal||pipelines).map(([col, items]) => (
                     <div key={col} className="w-full md:w-[260px] md:shrink-0 shrink-0 snap-start rounded-[16px] bg-[#101010] border border-[#1c1c1c] flex flex-col">
                       <div className="p-3.5 flex items-center justify-between border-b border-[#1a1a1a]">
                         <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: col==="Nuevo Lead"?"#6a6a6a":col==="Cotizado"?"#8a8a8a":col==="Pagado"?ACCENT:col==="Horneando"?"#ffd21f":"#6ee7b7" }} /><span className="text-[11px] font-bold tracking-[0.08em]">{col.toUpperCase()}</span><span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] mono text-[#666]">{items.length}</span></div><span className="text-[#444]">⋯</span>
