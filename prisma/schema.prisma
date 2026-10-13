@@ -7,6 +7,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Fase 0.5 — Enums con @map a los valores históricos en español ya guardados en prod
+// (seed-real 24/09). Migración segura: los valores DB no cambian.
+
+enum OrderStatus {
+  NUEVO     @map("Nuevo")
+  COTIZADO  @map("Cotizado")
+  PAGADO    @map("Pagado")
+  HORNEANDO @map("Horneando")
+  ENTREGADO @map("Entregado")
+  CANCELADO @map("Cancelado")
+}
+
+enum OrderSource {
+  INSTAGRAM @map("instagram")
+  WHATSAPP  @map("whatsapp")
+  WEB       @map("web")
+  MANUAL    @map("manual")
+}
+
+enum InteractionPlatform {
+  INSTAGRAM @map("instagram")
+  WHATSAPP  @map("whatsapp")
+  WEB       @map("web")
+}
+
+enum CustomerSegment {
+  NUEVO    @map("nuevo")
+  TIBIA    @map("tibia")
+  CALIENTE @map("caliente")
+  VIP      @map("VIP")
+}
+
+enum ExperimentStatus {
+  RUNNING   @map("running")
+  COMPLETED @map("completed")
+  PAUSED    @map("paused")
+}
+
 model Customer {
   id          String        @id @default(cuid())
   phone       String        @unique
@@ -17,10 +55,14 @@ model Customer {
   last_order  DateTime?
   total_orders Int          @default(0)
   ltv         Decimal       @default(0)
-  segment     String        @default("nuevo")
+  segment     CustomerSegment @default(NUEVO)
   tags        String[]
   orders      Order[]
   interactions Interaction[]
+  events      Event[]
+
+  @@index([segment])
+  @@index([last_order])
 }
 
 model Product {
@@ -35,49 +77,68 @@ model Product {
   imagen_url String?
   ig_avg_likes Int @default(0)
   items OrderItem[]
+
+  @@index([activo])
 }
 
 model Order {
   id          String      @id @default(cuid())
   customer_id String
-  customer    Customer    @relation(fields: [customer_id], references: [id])
-  status      String
-  source      String
+  customer    Customer    @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  status      OrderStatus
+  source      OrderSource
   total       Decimal
   created_at  DateTime    @default(now())
   items       OrderItem[]
   events      Event[]
+
+  @@index([customer_id])
+  @@index([status])
+  @@index([created_at])
+  @@index([source])
 }
 
 model OrderItem {
   id         String  @id @default(cuid())
   order_id   String
-  order      Order   @relation(fields: [order_id], references: [id])
+  order      Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product_id String
   product    Product @relation(fields: [product_id], references: [id])
   qty        Int
   unit_price Decimal
+
+  @@index([order_id])
+  @@index([product_id])
 }
 
 model Interaction {
   id          String    @id @default(cuid())
   customer_id String?
-  customer    Customer? @relation(fields: [customer_id], references: [id])
-  platform    String
+  customer    Customer? @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  platform    InteractionPlatform
   type        String
   content     String
   sentiment   String?
   created_at  DateTime  @default(now())
+
+  @@index([customer_id])
+  @@index([platform])
+  @@index([created_at])
 }
 
 model Event {
   id          String   @id @default(cuid())
   customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   order_id    String?
   name        String
   payload     Json?
   created_at  DateTime @default(now())
-  order       Order?   @relation(fields: [order_id], references: [id])
+  order       Order?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
+
+  @@index([customer_id])
+  @@index([order_id])
+  @@index([name])
 }
 
 model Automation {
@@ -91,6 +152,8 @@ model Automation {
   runs          Int     @default(0)
   conversions   Int     @default(0)
   experiment_id String?
+
+  @@index([active])
 }
 
 model Experiment {
@@ -100,5 +163,7 @@ model Experiment {
   variant_a  Json
   variant_b  Json
   winner     String?
-  status     String  @default("running")
+  status     ExperimentStatus  @default(RUNNING)
+
+  @@index([status])
 }

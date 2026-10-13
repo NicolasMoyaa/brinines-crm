@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import { verifyHubSignature } from "../../../../../lib/webhooks/verify";
 
 // POST /api/webhooks/whatsapp — WA Cloud API webhook
 
@@ -17,13 +17,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const sig = req.headers.get("x-hub-signature-256") || "";
-  if (process.env.WA_APP_SECRET) {
-    const expected = "sha256=" + crypto.createHmac("sha256", process.env.WA_APP_SECRET).update(raw).digest("hex");
-    if (sig && sig.length === expected.length) {
-      const valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
-      if (!valid) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
-  }
+  // Firma exigida: con WA_APP_SECRET configurado, ausente o inválida => 401
+  const check = verifyHubSignature(raw, sig, process.env.WA_APP_SECRET || "");
+  if (!check.ok) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   let body: unknown;
   try { body = JSON.parse(raw); } catch { body = {}; }
   console.log("[webhook:whatsapp] event", JSON.stringify(body).slice(0, 500));

@@ -24,7 +24,7 @@ function isGoogleConfigured(): boolean {
 }
 
 function isMetaConfigured(): boolean {
-  return Boolean(process.env.IG_ACCESS_TOKEN || process.env.NEXT_PUBLIC_IG_ACCESS_TOKEN);
+  return Boolean(process.env.IG_ACCESS_TOKEN);
 }
 
 function isDbConfigured(): boolean {

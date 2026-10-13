@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "../../../../lib/auth";
 
 // GET /api/inbox — stub para graph.facebook.com/v20.0/{ig_user_id}/conversations con token IGQ...
 // Lista conversaciones reales si hay token, sino retorna mock
 
 export async function GET(req: NextRequest) {
+  const gate = requireAuth(req);
+  if (!gate.ok) return gate.response;
+  const auth = gate.mode;
   const token = process.env.IG_ACCESS_TOKEN || process.env.IGQ_TOKEN;
   const igUserId = process.env.IG_USER_ID || "462599807041091902815";
 
@@ -13,7 +17,7 @@ export async function GET(req: NextRequest) {
       const res = await fetch(`https://graph.facebook.com/v20.0/${igUserId}/conversations?platform=instagram&fields=participants,messages{message,from,created_time},updated_time&limit=25&access_token=${token}`, { cache: "no-store" });
       const data = await res.json();
       if ((data as any).error) throw new Error(JSON.stringify((data as any).error));
-      return NextResponse.json({ stub: false, source: "graph", data });
+      return NextResponse.json({ stub: false, auth, source: "graph", data });
     } catch (e) {
       console.warn("[inbox] graph falló, fallback DB", e);
       // fallback a DB
@@ -53,6 +57,7 @@ export async function GET(req: NextRequest) {
       // Si no hay token, avisa que es DB histórica (reemplazará por Graph cuando token esté)
       return NextResponse.json({
         stub: !token,
+        auth,
         source: token ? "graph_fallback_db" : "db_historica",
         message: token ? "Graph falló, mostrando históricas de DB" : "Mostrando conversaciones históricas de DB — al conectar IG_ACCESS_TOKEN se verán las reales del DM de @brinines_ en tiempo real",
         conversations,
@@ -66,6 +71,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     stub: true,
+    auth,
     message: "Sin DB ni token — mock",
     conversations: [
       { id: "dm_1", platform: "instagram", from: "cliente_tucuman", content: "Quiero 2 de chocolate", status: "Nuevo" },

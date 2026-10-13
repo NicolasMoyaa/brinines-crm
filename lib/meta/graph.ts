@@ -3,8 +3,9 @@
 // Funciones: getProfilePictureUrl, getConversations, sendDm, createMediaAndPublish
 // Stub si falta token — no rompe build
 
+// Token SOLO server: IG_ACCESS_TOKEN (nunca NEXT_PUBLIC — el token no sale al bundle cliente)
 const IG_USER_ID = process.env.IG_USER_ID || "462599807041091902815";
-const IG_ACCESS_TOKEN = process.env.IG_ACCESS_TOKEN || process.env.NEXT_PUBLIC_IG_ACCESS_TOKEN || "";
+const IG_ACCESS_TOKEN = process.env.IG_ACCESS_TOKEN || "";
 
 const GRAPH_VERSION = "v20.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import { verifyHubSignature } from "../../../../../lib/webhooks/verify";
 
 // POST /api/webhooks/instagram — IG Graph API webhook
 // Validacion X-Hub-Signature-256 + guarda en interactions + crea events (stub sin DB real OK)
@@ -19,12 +19,9 @@ export async function POST(req: NextRequest) {
   const raw = await req.text();
   const sig = req.headers.get("x-hub-signature-256") || "";
 
-  // Validacion HMAC si hay secret
-  if (process.env.IG_APP_SECRET) {
-    const expected = "sha256=" + crypto.createHmac("sha256", process.env.IG_APP_SECRET).update(raw).digest("hex");
-    const valid = sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
-    if (!valid) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-  }
+  // Firma exigida: con IG_APP_SECRET configurado, ausente o inválida => 401
+  const check = verifyHubSignature(raw, sig, process.env.IG_APP_SECRET || "");
+  if (!check.ok) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
 
   let body: unknown;
   try { body = JSON.parse(raw); } catch { body = {}; }

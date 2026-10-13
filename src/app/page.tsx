@@ -1,135 +1,22 @@
 "use client";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, MessageSquare, Users, Kanban, Zap, BarChart3, Calendar, Search, Plus, Phone, Check, Sparkles, Image as ImageIcon, Wand2, Clock, Send, Menu, X, Settings } from "lucide-react";
+import { Sidebar, MobileDrawer } from "../components/crm/Sidebar";
+import { Topbar } from "../components/crm/Topbar";
+import { DashboardView } from "../components/crm/DashboardView";
+import { ContactsView } from "../components/crm/ContactsView";
+import { ConversationsView } from "../components/crm/ConversationsView";
+import { PipelinesView } from "../components/crm/PipelinesView";
+import { AutomationsView } from "../components/crm/AutomationsView";
+import { ReportingView } from "../components/crm/ReportingView";
+import { CalendarView } from "../components/crm/CalendarView";
+import { ContenidoView } from "../components/crm/ContenidoView";
+import { AjustesView } from "../components/crm/AjustesView";
+import { kpis, contacts, pedidos, pipelines, conversations } from "../components/crm/data";
+import { ACCENT } from "../components/crm/theme";
 
-// BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic) — DAG-2026-09-21 i18n es + IG avatar + Contenido
-// Referencia: GoHighLevel + Close CRM | @brinines_ 201 followers | GoHighLevel all-in-one pipelines+inbox+automations flat pricing
-// Alta calidad — no html del 2000: Inter + JetBrains Mono, #0b0b0b/#121212/#a3ff12, blur, borders, motion sutil
-
-const ACCENT = "#a3ff12";
-const IG_AVATAR = process.env.NEXT_PUBLIC_IG_AVATAR_URL || "";
-
-const kpis = [
-  { label: "LEADS TOTAL", value: "201", delta: "+12 hoy", sub: "IG + WhatsApp", accent: false },
-  { label: "ÓRDENES EST.", value: "12", delta: "+3 hoy", sub: "Este mes", accent: false },
-  { label: "REVENUE", value: "$72.000", delta: "+23%", sub: "ARS estimado", accent: true },
-  { label: "CONVERSIÓN", value: "3,88%", delta: "↑ 0.6%", sub: "Lead → Pago", accent: false },
-];
-
-const ventasSabor = [
-  { name: "Chocolate doble", count: 12, pct: 100, color: ACCENT },
-  { name: "Tradicional vainilla", count: 6, pct: 50, color: "#fff" },
-  { name: "Banana con nuez", count: 5, pct: 41, color: "#8a8a8a" },
-  { name: "Limón glaseado", count: 4, pct: 33, color: "#555" },
-];
-
-const pedidos = [
-  { name: "Florencia T.", initials: "FT", flavor: "3x Chocolate", amount: "$13.800", status: "Horneando", time: "1h" },
-  { name: "Lucía H.", initials: "LH", flavor: "Chocolate", amount: "$4.600", status: "Pagado", time: "2m" },
-  { name: "Martina P.", initials: "MP", flavor: "Banana", amount: "$4.600", status: "Nuevo", time: "18m" },
-  { name: "Sofia G.", initials: "SG", flavor: "Tradicional", amount: "$4.600", status: "Entregado", time: "5h" },
-  { name: "Camila N.", initials: "CN", flavor: "2x Choco", amount: "$9.200", status: "Cotizado", time: "Ayer" },
-];
-
-const contacts = [
-  { id: 1, name: "Florencia Torres", phone: "381 555-0123", city: "Centro", tag: "chocolate-lover", flavor: "Chocolate", ltv: "$18.400", orders: 4, last: "hace 2d", status: "VIP", avatar: "FT" },
-  { id: 2, name: "Lucía Herrera", phone: "381 555-0124", city: "Las Talitas", tag: "recurrente", flavor: "Limón", ltv: "$14.200", orders: 3, last: "hace 5d", status: "caliente", avatar: "LH" },
-  { id: 3, name: "Sofia Gómez", phone: "381 555-0125", city: "Yerba Buena", tag: "nuevo", flavor: "Tradicional", ltv: "$4.600", orders: 1, last: "hoy", status: "nuevo", avatar: "SG" },
-  { id: 4, name: "Martina Paz", phone: "381 555-0126", city: "Fuera Centro", tag: "banana", flavor: "Banana", ltv: "$9.800", orders: 2, last: "hace 1d", status: "tibia", avatar: "MP" },
-];
-
-const conversations = [
-  { id: "c1", name: "Lucía H.", avatar: "LH", lastMsg: "Quiero 3 de chocolate y 2 de limón, zona Centro", time: "2m", tag: "pedido", flavor: "Chocolate", unread: 2 },
-  { id: "c2", name: "Martina P.", avatar: "MP", lastMsg: "Hola! Qué sabores tienen hoy? 😊", time: "18m", tag: "consulta", flavor: "Banana", unread: 0 },
-  { id: "c3", name: "Sofia G.", avatar: "SG", lastMsg: "Gracias! Llegó perfecto 🥐", time: "5h", tag: "postventa", flavor: "Tradicional", unread: 0 },
-];
-
-const pipelines: Record<string, typeof pedidos> = {
-  "Nuevo Lead": [{ name: "Sofia G.", initials: "SG", flavor: "Tradicional", amount: "$4.600", status: "Nuevo", time: "5h" }],
-  "Cotizado": [{ name: "Camila N.", initials: "CN", flavor: "2x Choco", amount: "$9.200", status: "Cotizado", time: "Ayer" }],
-  "Pagado": [{ name: "Lucía H.", initials: "LH", flavor: "Chocolate", amount: "$4.600", status: "Pagado", time: "2m" }],
-  "Horneando": [{ name: "Florencia T.", initials: "FT", flavor: "3x Chocolate", amount: "$13.800", status: "Horneando", time: "1h" }],
-  "Entregado": [{ name: "Agustina M.", initials: "AM", flavor: "2x Limón", amount: "$9.200", status: "Entregado", time: "Ayer" }],
-};
-
-const automations = [
-  { name: "Story Reply Auto DM", trigger: "story_reply", desc: "Respuesta automática a story replies con catálogo + precios (stock real)", runs: 142, conv: "18%", active: true },
-  { name: "Post-Entrega Review 48h", trigger: "order_delivered +48h", desc: "Pedir review + 10% próxima compra (human-in-the-loop)", runs: 27, conv: "41%", active: true },
-  { name: "Tag Automático", trigger: "mention sabor", desc: "Etiqueta automática según sabor mencionado (chocolate-lover etc)", runs: 89, conv: "—", active: true },
-  { name: "Upsell integrado", trigger: "en pedido", desc: "Sugerir 2x dentro del mismo pedido (no DM aparte) — ver calculator", runs: 34, conv: "12%", active: true },
-];
-
-function Sidebar({ tab, setTab }: { tab: string; setTab: (v: string) => void }) {
-  const Nav = ({ id, label, icon: Icon, count }: { id: string; label: string; icon: typeof LayoutDashboard; count?: number }) => {
-    const active = tab === id;
-    return (
-      <button onClick={() => setTab(id)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}>
-        <Icon size={16} className={`${active ? "opacity-100" : "opacity-70"}`} />
-        <span className="flex-1 text-left">{label}</span>
-        {count !== undefined && <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${active ? "bg-white text-black" : "bg-[#222] text-[#777]"}`}>{count}</span>}
-        {active && <div className="w-1 h-4 rounded-full" style={{ background: ACCENT }} />}
-      </button>
-    );
-  };
-  return (
-    <div className="w-[252px] shrink-0 bg-[#0f0f0f] border-r border-[#1c1c1c] flex flex-col hidden lg:flex">
-      <div className="h-[64px] flex items-center gap-3 px-5 border-b border-[#1c1c1c]">
-        <div className="w-8 h-8 rounded-[9px] bg-white text-black grid place-items-center font-black text-[15px] tracking-tighter">B</div>
-        <div className="leading-none">
-          <div className="font-extrabold text-[14px] tracking-[-0.02em]">BRININES</div>
-          <div className="text-[10px] tracking-[0.14em] text-[#6a6a6a] font-semibold mt-[2px]">CRM • V1 GHL CLONE</div>
-        </div>
-        <div className="ml-auto w-2 h-2 rounded-full animate-pulse" style={{ background: ACCENT }} />
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-6">
-        <div>
-          <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">PRINCIPAL</div>
-          <div className="space-y-1">
-            <Nav id="dashboard" label="Dashboard" icon={LayoutDashboard} />
-            <Nav id="conversations" label="Conversaciones" icon={MessageSquare} count={3} />
-            <Nav id="contacts" label="Contactos" icon={Users} count={201} />
-            <Nav id="pipelines" label="Embudo" icon={Kanban} />
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">AUTOMATIZACIÓN</div>
-          <div className="space-y-1">
-            <Nav id="automations" label="Automatizaciones" icon={Zap} count={8} />
-            <Nav id="reporting" label="Reportes" icon={BarChart3} />
-            <Nav id="calendar" label="Calendario" icon={Calendar} />
-            <Nav id="contenido" label="Contenido" icon={ImageIcon} />
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">SISTEMA</div>
-          <div className="space-y-1">
-            <Nav id="ajustes" label="Ajustes" icon={Settings} />
-          </div>
-        </div>
-        <div className="mx-1 mt-6 rounded-[14px] bg-[#151515] border border-[#232323] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold tracking-wide text-[#9a9a9a]">USO WHATSAPP</span>
-            <span className="text-[10px] mono text-[#666]">78%</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-[#222] overflow-hidden">
-            <div className="h-full rounded-full" style={{ width: "78%", background: ACCENT }} />
-          </div>
-          <div className="text-[11px] text-[#666] mt-2">156 / 200 conversaciones este mes</div>
-        </div>
-      </div>
-      <div className="p-3 border-t border-[#1c1c1c]">
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-[#151515] border border-[#232323]">
-          <div className="w-7 h-7 rounded-full bg-[#222] grid place-items-center text-[11px] font-bold">NM</div>
-          <div className="flex-1 leading-none">
-            <div className="text-[12.5px] font-semibold">Nico Moyaa</div>
-            <div className="text-[11px] text-[#6a6a6a]">Owner • Admin</div>
-          </div>
-          <div className="w-6 h-6 rounded-full bg-[#1e1e1e] grid place-items-center text-[12px]">⋯</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// BRININES CRM v1 - GoHighLevel Clone — PREMIUM DARK ($97/mo aesthetic)
+// Fase 0.6: monolito 791 líneas partido en shell + src/components/crm/* (vistas con props tipadas).
+// Identidad visual intacta. RSC total llega con /negocio (Fase 2): fetch server + islas cliente.
 
 export default function BrininesCRM() {
   const [tab, setTab] = useState("dashboard");
@@ -146,7 +33,7 @@ export default function BrininesCRM() {
   const [connGoogle, setConnGoogle] = useState(true);
   const [connMeta, setConnMeta] = useState(true);
   const [connUpstash, setConnUpstash] = useState(true);
-  const [lastSync, setLastSync] = useState<Record<string,string>>({google:"—", meta:"—", wa:"—", upstash:"—"});
+  const [lastSync, setLastSync] = useState<Record<string, string>>({ google: "—", meta: "—", wa: "—", upstash: "—" });
   const maskSecret = (v: string) => v ? `••••${v.slice(-4)}` : "••••";
   // --- REAL DATA wiring (Supabase + IG Graph histórica) ---
   const [kpisReal, setKpisReal] = useState<typeof kpis | null>(null);
@@ -157,76 +44,76 @@ export default function BrininesCRM() {
   const [inboxSource, setInboxSource] = useState<string>("loading");
   useEffect(() => {
     // Dashboard real
-    fetch("/api/dashboard").then(r=>r.json()).then(j=>{
+    fetch("/api/dashboard").then(r => r.json()).then(j => {
       if (!j.stub && j.kpis) {
-        const acc = j.kpis.find((k:any)=>k.label.includes("REVENUE"));
         setKpisReal([
-          { label:"LEADS TOTAL", value: String(j.counts.customerCount), delta:"+ real DB", sub:"Supabase", accent:false },
-          { label:"ÓRDENES", value: String(j.counts.orderCount), delta:`${j.kpis[1]?.delta||""}`, sub:"DB", accent:false },
-          { label:"REVENUE", value: j.kpis.find((k:any)=>k.label==="REVENUE")?.value || `$${j.revenue}`, delta:"real DB", sub:"ARS sum", accent:true },
-          { label:"INTERACCIONES", value:String(j.counts.interactionsCount), delta:"IG+WA", sub:"históricas", accent:false },
+          { label: "LEADS TOTAL", value: String(j.counts.customerCount), delta: "+ real DB", sub: "Supabase", accent: false },
+          { label: "ÓRDENES", value: String(j.counts.orderCount), delta: `${j.kpis[1]?.delta || ""}`, sub: "DB", accent: false },
+          { label: "REVENUE", value: j.kpis.find((k: { label: string }) => k.label === "REVENUE")?.value || `$${j.revenue}`, delta: "real DB", sub: "ARS sum", accent: true },
+          { label: "INTERACCIONES", value: String(j.counts.interactionsCount), delta: "IG+WA", sub: "históricas", accent: false },
         ]);
       }
-    }).catch(()=>{});
+    }).catch(() => { });
     // Contactos reales
-    fetch("/api/customers").then(r=>r.json()).then(j=>{
+    fetch("/api/customers").then(r => r.json()).then(j => {
       if (!j.stub && j.data?.length) setContactsReal(j.data);
-    }).catch(()=>{});
+    }).catch(() => { });
     // Órdenes reales -> pedidos + pipelines
-    fetch("/api/orders").then(r=>r.json()).then(j=>{
+    fetch("/api/orders").then(r => r.json()).then(j => {
       if (!j.stub && j.data?.length) {
-        const mapped = j.data.map((o:any)=>({ name:o.name, initials:o.initials, flavor:o.flavor, amount:o.amount, status:o.status, time:o.time }));
+        const mapped = j.data.map((o: { name: string; initials: string; flavor: string; amount: string; status: string; time: string }) => ({ name: o.name, initials: o.initials, flavor: o.flavor, amount: o.amount, status: o.status, time: o.time }));
         setOrdersReal(mapped);
-        const pipe: Record<string, typeof pedidos> = { "Nuevo":[], "Cotizado":[], "Pagado":[], "Horneando":[], "Entregado":[] };
+        const pipe: Record<string, typeof pedidos> = { "Nuevo": [], "Cotizado": [], "Pagado": [], "Horneando": [], "Entregado": [] };
         for (const o of mapped) {
-          const k = o.status==="Nuevo Lead"?"Nuevo":o.status;
+          const k = o.status === "Nuevo Lead" ? "Nuevo" : o.status;
           if (pipe[k]) pipe[k].push(o); else pipe["Nuevo"].push(o);
         }
         // si API trae status con espacios, normaliza
         const pipe2: Record<string, typeof pedidos> = {};
-        for (const [k,v] of Object.entries(pipe)) if (v.length) pipe2[k]=v;
+        for (const [k, v] of Object.entries(pipe)) if (v.length) pipe2[k] = v;
         if (Object.keys(pipe2).length) setPipelinesReal(pipe2);
       }
-    }).catch(()=>{});
+    }).catch(() => { });
     // Conversaciones históricas reales (DM de @brinines_ vía Graph o DB fallback)
-    fetch("/api/inbox").then(r=>r.json()).then(j=>{
+    fetch("/api/inbox").then(r => r.json()).then(j => {
       if (j.conversations?.length) {
-        const mapped = j.conversations.map((c:any)=>({
-          id:c.id, name:c.from||c.name||"Cliente", avatar:c.avatar||(c.from||"??").slice(0,2).toUpperCase(),
-          lastMsg:c.lastMsg||c.content||c.message||"—", time:c.time||"", tag:c.tag||c.platform||"dm", flavor:c.flavor||"—", unread:0
+        const mapped = j.conversations.map((c: { id: string; from: string; name: string; avatar: string; lastMsg: string; content: string; message: string; time: string; tag: string; platform: string; flavor: string }) => ({
+          id: c.id, name: c.from || c.name || "Cliente", avatar: c.avatar || (c.from || "??").slice(0, 2).toUpperCase(),
+          lastMsg: c.lastMsg || c.content || c.message || "—", time: c.time || "", tag: c.tag || c.platform || "dm", flavor: c.flavor || "—", unread: 0
         }));
         setConversationsReal(mapped);
-        setInboxSource(j.source||"unknown");
+        setInboxSource(j.source || "unknown");
         if (!j.stub) showToast(`Conversaciones reales cargadas: ${mapped.length} (${j.source})`);
       } else if (j.data?.data?.length) {
         // Graph directo
-        const mapped = j.data.data.map((c:any)=>({ id:c.id, name:c.participants?.data?.[0]?.username || "Cliente IG", avatar:"IG", lastMsg:c.messages?.data?.[0]?.message || "—", time:"", tag:"instagram", flavor:"—", unread:0 }));
+        const mapped = j.data.data.map((c: { id: string; participants: { data: { username: string }[] }; messages: { data: { message: string }[] } }) => ({ id: c.id, name: c.participants?.data?.[0]?.username || "Cliente IG", avatar: "IG", lastMsg: c.messages?.data?.[0]?.message || "—", time: "", tag: "instagram", flavor: "—", unread: 0 }));
         setConversationsReal(mapped);
         setInboxSource("graph");
       }
-    }).catch(()=>{});
+    }).catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const probarConexion = async (id: string) => {
-    const now = new Date().toLocaleTimeString("es-AR", {hour:"2-digit", minute:"2-digit"});
-    setLastSync(s => ({...s, [id]: now}));
+    const now = new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    setLastSync(s => ({ ...s, [id]: now }));
     // pruebas reales
     try {
-      if (id==="google") {
-        const r=await fetch("/api/health/meta").then(x=>x.json()).catch(()=>null);
-        showToast(r?.configured? "Meta/Health OK":"Google Calendar — stub, requiere GOOGLE_CLIENT_ID");
+      if (id === "google") {
+        const r = await fetch("/api/health/meta").then(x => x.json()).catch(() => null);
+        showToast(r?.configured ? "Meta/Health OK" : "Google Calendar — stub, requiere GOOGLE_CLIENT_ID");
         return;
       }
-      if (id==="meta") {
-        const r=await fetch("/api/inbox").then(x=>x.json());
-        const n=r.conversations?.length||r.data?.data?.length||0;
-        showToast(r.stub? `Meta DB fallback: ${n} conversaciones históricas (conectá IG_ACCESS_TOKEN para Graph real)` : `Meta Graph vivo: ${n} conversaciones reales de @brinines_`);
-        setLastSync(s=>({...s, meta: now}));
+      if (id === "meta") {
+        const r = await fetch("/api/inbox").then(x => x.json());
+        const n = r.conversations?.length || r.data?.data?.length || 0;
+        showToast(r.stub ? `Meta DB fallback: ${n} conversaciones históricas (conectá IG_ACCESS_TOKEN para Graph real)` : `Meta Graph vivo: ${n} conversaciones reales de @brinines_`);
+        setLastSync(s => ({ ...s, meta: now }));
         return;
       }
-      if (id==="wa") { showToast(waConnected ? "WhatsApp — conectado" : "WhatsApp — requiere WHATSAPP_TOKEN"); return; }
-    } catch {}
-    const msgs: Record<string,string> = {
+      if (id === "wa") { showToast(waConnected ? "WhatsApp — conectado" : "WhatsApp — requiere WHATSAPP_TOKEN"); return; }
+    } catch { /* stub */ }
+    const msgs: Record<string, string> = {
       google: "Google Calendar — verificación stub OK (requiere GOOGLE_CLIENT_ID para real)",
       meta: "Meta Graph — verificación stub OK (requiere IG_ACCESS_TOKEN para real)",
       wa: waConnected ? "WhatsApp — conectado" : "WhatsApp — requiere conexión",
@@ -262,523 +149,21 @@ export default function BrininesCRM() {
         <Sidebar tab={tab} setTab={setTab} />
         {/* Mobile drawer overlay */}
         {mobileOpen && <div onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/50 z-40 lg:hidden" />}
-        {/* Mobile drawer sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-[280px] z-50 bg-[#0f0f0f] border-r border-[#1c1c1c] flex flex-col transition-transform duration-300 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
-          <div className="h-[64px] flex items-center gap-3 px-5 border-b border-[#1c1c1c] shrink-0">
-            <div className="w-8 h-8 rounded-[9px] bg-white text-black grid place-items-center font-black text-[15px] tracking-tighter">B</div>
-            <div className="leading-none flex-1">
-              <div className="font-extrabold text-[14px] tracking-[-0.02em]">BRININES</div>
-              <div className="text-[10px] tracking-[0.14em] text-[#6a6a6a] font-semibold mt-[2px]">CRM • V1 GHL CLONE</div>
-            </div>
-            <button onClick={() => setMobileOpen(false)} className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[#8a8a8a]"><X size={14} /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-6">
-            <div>
-              <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">PRINCIPAL</div>
-              <div className="space-y-1">
-                {[
-                  {id:"dashboard",label:"Dashboard",Icon:LayoutDashboard},
-                  {id:"conversations",label:"Conversaciones",Icon:MessageSquare,count:3},
-                  {id:"contacts",label:"Contactos",Icon:Users,count:201},
-                  {id:"pipelines",label:"Embudo",Icon:Kanban},
-                ].map(({id,label,Icon,count}: {id:string;label:string;Icon:any;count?:number}) => {
-                  const active = tab===id;
-                  return <button key={id} onClick={()=>{setTab(id);setMobileOpen(false);}} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}><Icon size={16} className={active?"opacity-100":"opacity-70"}/><span className="flex-1 text-left">{label}</span>{count!==undefined && <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${active?"bg-white text-black":"bg-[#222] text-[#777]"}`}>{count}</span>}</button>;
-                })}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">AUTOMATIZACIÓN</div>
-              <div className="space-y-1">
-                {[
-                  {id:"automations",label:"Automatizaciones",Icon:Zap,count:8},
-                  {id:"reporting",label:"Reportes",Icon:BarChart3},
-                  {id:"calendar",label:"Calendario",Icon:Calendar},
-                  {id:"contenido",label:"Contenido",Icon:ImageIcon},
-                ].map(({id,label,Icon,count}: {id:string;label:string;Icon:any;count?:number}) => {
-                  const active = tab===id;
-                  return <button key={id} onClick={()=>{setTab(id);setMobileOpen(false);}} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}><Icon size={16} className={active?"opacity-100":"opacity-70"}/><span className="flex-1 text-left">{label}</span>{count!==undefined && <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${active?"bg-white text-black":"bg-[#222] text-[#777]"}`}>{count}</span>}</button>;
-                })}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] tracking-[0.16em] font-bold text-[#4a4a4a] px-3 mb-2">SISTEMA</div>
-              <div className="space-y-1">
-                {[
-                  {id:"ajustes",label:"Ajustes",Icon:Settings},
-                ].map(({id,label,Icon}) => {
-                  const active = tab===id;
-                  return <button key={id} onClick={()=>{setTab(id);setMobileOpen(false);}} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition ${active ? "bg-[#1e1e1e] text-white border border-[#2a2a2a]" : "text-[#8a8a8a] hover:text-[#c8c8c8] hover:bg-[#161616] border border-transparent"}`}><Icon size={16} className={active?"opacity-100":"opacity-70"}/><span className="flex-1 text-left">{label}</span></button>;
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="p-3 border-t border-[#1c1c1c]">
-            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-[#151515] border border-[#232323]">
-              <div className="w-7 h-7 rounded-full bg-[#222] grid place-items-center text-[11px] font-bold">NM</div>
-              <div className="flex-1 leading-none"><div className="text-[12.5px] font-semibold">Nico Moyaa</div><div className="text-[11px] text-[#6a6a6a]">Owner • Admin</div></div>
-            </div>
-          </div>
-        </div>
+        <MobileDrawer tab={tab} setTab={setTab} open={mobileOpen} onClose={() => setMobileOpen(false)} />
         <div className="flex-1 flex flex-col min-w-0 bg-[#0b0b0b]">
-          {/* Top bar */}
-          <div className="h-[64px] shrink-0 flex items-center justify-between px-3 lg:px-6 border-b border-[#1c1c1c] bg-[#0f0f0f]/80 backdrop-blur sticky top-0 z-20">
-            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-              <button onClick={() => setMobileOpen(true)} className="lg:hidden w-9 h-9 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-white shrink-0" aria-label="Abrir menú"><Menu size={16} /></button>
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                {IG_AVATAR ? (
-                  <img src={IG_AVATAR} alt="Brinines @brinines_" className="w-8 h-8 rounded-full object-cover hidden sm:block border border-[#232323]" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-white text-black grid place-items-center font-black text-[13px] hidden sm:grid border border-[#232323]" title="Brinines @brinines_">B</div>
-                )}
-                <div className="leading-none min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[13.5px] truncate"><span className="hidden sm:inline">BRININES CRM OS v1 - GHL Clone</span><span className="sm:hidden">BRININES</span></span>
-                    <span className="hidden md:inline text-[10px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#262626] text-[#8a8a8a] mono">201 seguidores</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse hidden sm:inline-block" />
-                  </div>
-                  <div className="text-[11px] text-[#6a6a6a] mt-1 hidden sm:flex items-center gap-1.5"><span>Tucumán • Budines artesanales</span><span className="opacity-40">•</span><span className="text-[#8a8a8a] hidden md:inline">Estética GoHighLevel • Wa 5493813562078</span></div>
-                </div>
-              </div>
-              <div className="hidden lg:flex items-center gap-2 ml-6 pl-6 border-l border-[#1e1e1e]">
-                <div className="flex -space-x-2">
-                  {[1,2,3].map(i => <img key={i} src={`https://i.pravatar.cc/24?img=${10+i}`} alt="" className="w-6 h-6 rounded-full border-2 border-[#0f0f0f]" />)}
-                </div>
-                <span className="text-[11px] text-[#666]">+198 activos hoy</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2 text-[11px] mono text-[#5a5a5a] bg-[#111] border border-[#1e1e1e] px-3 py-1.5 rounded-full"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Embudo activo</div>
-              <button onClick={() => { setWaConnected(!waConnected); showToast(waConnected ? "WhatsApp desconectado" : "WhatsApp conectado ✓ Brinines listo"); }} className={`h-9 px-4 rounded-full text-[13px] font-bold tracking-tight flex items-center gap-2 border transition ${waConnected ? "bg-[#1a1a1a] border-[#2a2a2a] text-white" : "text-black border-transparent"}`} style={waConnected ? {} : { background: ACCENT }}>
-                {waConnected ? "● WhatsApp conectado" : "◍ Conectar WhatsApp"}
-              </button>
-            </div>
-          </div>
+          <Topbar onMenu={() => setMobileOpen(true)} waConnected={waConnected} onToggleWa={() => setWaConnected(v => !v)} showToast={showToast} />
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            {tab === "dashboard" && (
-              <div className="p-4 lg:p-6 space-y-6 max-w-[1320px] mx-auto">
-                {/* KPIs */}
-                {kpisReal && <div className="text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border border-[#1e3a0f] px-2 py-1 rounded-full mb-2 inline-block">● Datos reales Supabase • {kpisReal[0]?.value} leads, {kpisReal[1]?.value} órdenes</div>}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                  {(kpisReal||kpis).map(k => (
-                    <div key={k.label} className="relative rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-4 overflow-hidden group hover:border-[#262626] transition">
-                      <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-[40px] opacity-[0.12] -translate-y-8 translate-x-8" style={{ background: k.accent ? ACCENT : "#fff" }} />
-                      <div className="flex items-start justify-between">
-                        <span className="text-[10px] tracking-[0.14em] font-bold text-[#5a5a5a]">{k.label}</span>
-                        <div className="w-7 h-7 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[#7a7a7a]"><Sparkles size={14} /></div>
-                      </div>
-                      <div className="mt-3 flex items-end gap-2">
-                        <span className="text-[26px] font-extrabold tracking-[-0.03em] leading-none">{k.value}</span>
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full font-bold mb-1 border" style={{ background: k.label.includes("REVENUE") ? "#12210a" : "#1a1a1a", color: k.label.includes("REVENUE") ? ACCENT : "#8a8a8a", borderColor: k.label.includes("REVENUE") ? "#1f3a0f" : "#232323" }}>{k.delta}</span>
-                      </div>
-                      <div className="text-[11px] text-[#666] mt-1.5">{k.sub}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-                  <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <div className="font-bold text-[14px] tracking-tight">Ventas por sabor</div>
-                        <div className="text-[11px] text-[#666] mt-0.5">Últimos 30 días • 27 budines • @brinines_ 201 seguidores</div>
-                      </div>
-                      <span className="text-[10px] mono px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#222] text-[#777]">TUC • BRININES</span>
-                    </div>
-                    <div className="space-y-3">
-                      {ventasSabor.map(s => (
-                        <div key={s.name}>
-                          <div className="flex items-center justify-between text-[12px] mb-1.5"><span className="font-medium">{s.name}</span><span className="mono text-[#8a8a8a]">{s.count} uds • {s.pct}%</span></div>
-                          <div className="h-2 rounded-full bg-[#1a1a1a] overflow-hidden"><div className="h-full rounded-full" style={{ width: `${s.pct}%`, background: s.color }} /></div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-5 grid grid-cols-3 gap-3">
-                      <div className="rounded-xl bg-[#0f0f0f] border border-[#1c1c1c] p-3"><div className="text-[10px] text-[#5a5a5a] font-bold tracking-wide">HORA PICO</div><div className="text-[13px] font-semibold mt-1">18:00-20:00</div><div className="text-[11px] text-[#666]">Retiros tarde</div></div>
-                      <div className="rounded-xl bg-[#0f0f0f] border border-[#1c1c1c] p-3"><div className="text-[10px] text-[#5a5a5a] font-bold tracking-wide">TICKET PROM</div><div className="text-[13px] font-semibold mt-1">$5.400 ARS</div><div className="text-[11px] text-[#666]">+ envío</div></div>
-                      <div className="rounded-xl p-3 border" style={{ background: `${ACCENT}14`, borderColor: `${ACCENT}30` }}><div className="text-[10px] font-bold tracking-wide" style={{ color: ACCENT }}>MÁS PEDIDO</div><div className="text-[13px] font-bold mt-1 text-white">Chocolate</div><div className="text-[11px]" style={{ color: ACCENT }}>44% ventas • 12 likes</div></div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="font-bold text-[14px]">Últimos pedidos</span>
-                      <button onClick={() => setTab("pipelines")} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] hover:text-white">Ver embudo →</button>
-                    </div>
-                    {ordersReal && <div className="text-[10px] mono text-[#8ab66a] mb-2">● {ordersReal.length} pedidos reales desde Supabase</div>}
-                    <div className="space-y-2.5">
-                      {(ordersReal||pedidos).map(p => (
-                        <div key={p.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#0f0f0f] border border-[#1a1a1a] hover:border-[#222] transition">
-                          <div className="w-8 h-8 rounded-full bg-[#1a1a1a] grid place-items-center text-[11px] font-bold">{p.initials}</div>
-                          <div className="flex-1 min-w-0"><div className="text-[12.5px] font-semibold truncate">{p.name} • {p.flavor}</div><div className="text-[11px] text-[#666]">{p.time} • {p.amount}</div></div>
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded-full border tracking-wide ${p.status==="Pagado"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":p.status==="Horneando"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":p.status==="Entregado"?"bg-[#0f1a1a] border-[#1a2a2a] text-[#6ee7b7]":p.status==="Cotizado"?"bg-[#141414] border-[#222] text-[#9a9a9a]":"bg-[#1a1a1a] border-[#2a2a2a] text-[#c8c8c8]"}`}>{p.status.toUpperCase()}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-auto pt-4 flex gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden flex">
-                        <div className="h-full bg-[#3a3a3a]" style={{ width: "15%" }} /><div className="h-full bg-[#5a5a5a]" style={{ width: "15%" }} /><div className="h-full" style={{ width: "15%", background: ACCENT }} /><div className="h-full bg-[#ffd21f]" style={{ width: "30%" }} /><div className="h-full bg-[#6ee7b7]" style={{ width: "25%" }} />
-                      </div>
-                    </div>
-                    <p className="mt-3 text-[10px] text-[#4a4a4a] mono">BRININES CRM OS — bg-[#a3ff12] accent — 5 SKUs: BRN-LIM-01 5500, BRN-TRA-02 5000, BRN-BAN-03 6500, BRN-CHO-04 7000, BRN-MIX-05 6000</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === "contacts" && (
-              <div className="p-4 lg:p-6 max-w-[1320px] mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Contactos {contactsReal && <span className="text-[12px] font-bold px-2 py-1 rounded-full bg-[#0f1a0a] border border-[#1e3a0f] text-[#a3ff12] ml-2">● REAL {contactsReal.length} DB</span>}</div><div className="text-[12px] text-[#666] mt-1">{contactsReal? `${contactsReal.length} contactos • DB Supabase sa-east-1 • tiempo real` : "201 contactos • 8 VIP • Tucumán base • LTV real"}</div></div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar por nombre, tag, sabor..." className="h-9 w-[280px] bg-[#121212] border border-[#1e1e1e] rounded-full pl-9 pr-3 text-[13px] placeholder:text-[#555] outline-none focus:border-[#2a2a2a]" /></div>
-                    <button onClick={() => showToast("Export CSV generado")} className="h-9 px-4 rounded-full bg-[#1a1a1a] border border-[#262626] text-[13px] font-medium">Exportar</button>
-                    <button onClick={() => showToast("Nuevo contacto demo creado")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ Nuevo contacto</button>
-                  </div>
-                </div>
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] overflow-hidden">
-                  <div className="overflow-x-auto scrollbar-thin">
-                  <table className="w-full text-left border-collapse min-w-[640px] hidden md:table">
-                    <thead><tr className="text-[10px] tracking-[0.14em] font-bold text-[#5a5a5a] border-b border-[#1a1a1a]"><th className="py-3 px-5">CONTACTO</th><th className="py-3 px-3">UBICACIÓN</th><th className="py-3 px-3">TAG</th><th className="py-3 px-3">SABOR FAV</th><th className="py-3 px-3">LTV</th><th className="py-3 px-3">PEDIDOS</th><th className="py-3 px-5 text-right">ESTADO</th></tr></thead>
-                    <tbody>{(contactsReal||contacts).map(c => (<tr key={c.id} className="border-b border-[#151515] last:border-0 hover:bg-[#101010] transition"><td className="py-3.5 px-5"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">{c.avatar}</div><div><div className="text-[13px] font-semibold">{c.name}</div><div className="text-[11px] mono text-[#666]">{c.phone}</div></div></div></td><td className="py-3.5 px-3 text-[12px] text-[#8a8a8a]">{c.city}</td><td className="py-3.5 px-3"><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span></td><td className="py-3.5 px-3 text-[12px]">{(c as any).flavor||c.tag}</td><td className="py-3.5 px-3 text-[12px] font-bold mono">{c.ltv}</td><td className="py-3.5 px-3 text-[12px] mono text-[#8a8a8a]">{c.orders} • {c.last}</td><td className="py-3.5 px-5 text-right"><span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></td></tr>))}</tbody>
-                  </table>
-                  </div>
-                  {/* Mobile cards 375px */}
-                  <div className="md:hidden p-3 space-y-2">
-                    {(contactsReal||contacts).map(c => (
-                      <div key={c.id} className="rounded-xl bg-[#0f0f0f] border border-[#1e1e1e] p-3 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold shrink-0">{c.avatar}</div>
-                        <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold truncate">{c.name}</div><div className="text-[11px] mono text-[#666] truncate">{c.phone} • {c.city}</div><div className="flex items-center gap-1.5 mt-1"><span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#8a8a8a] mono">{c.tag}</span><span className="text-[10px] text-[#666]">{c.flavor}</span></div></div>
-                        <div className="text-right"><div className="text-[12px] font-bold mono">{c.ltv}</div><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${c.status==="VIP"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":c.status==="caliente"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#8a8a8a]"}`}>{c.status.toUpperCase()}</span></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === "conversations" && (
-              <div className="flex flex-col md:flex-row h-[calc(100vh-64px)]">
-                <div className="w-full md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-[#1c1c1c] bg-[#0f0f0f] flex flex-col max-h-[45vh] md:max-h-none">
-                  <div className="p-3 border-b border-[#1c1c1c] flex items-center gap-2">
-                    <div className="flex-1 relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#555]" /><input placeholder="Buscar conversaciones..." className="h-8 w-full bg-[#121212] border border-[#1e1e1e] rounded-full pl-8 pr-3 text-[12px] placeholder:text-[#555] outline-none" /></div>
-                    <button className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[12px]">◧</button>
-                  </div>
-                  {inboxSource && <div className="px-3 py-1 text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border-b border-[#1e3a0f]">{inboxSource.includes("db") ? `● Históricas DB (${(conversationsReal||conversations).length}) — al conectar IG_ACCESS_TOKEN verás DMs reales de @brinines_ en tiempo real` : inboxSource==="graph" ? `● Graph vivo — DMs reales de @brinines_` : `● ${(conversationsReal||conversations).length} conversaciones`}</div>}
-                  <div className="flex-1 overflow-y-auto">
-                    {(conversationsReal||conversations).map(c => (
-                      <button key={c.id} className="w-full text-left p-3 flex gap-3 border-b border-[#141414] hover:bg-[#111] transition">
-                        <div className="w-9 h-9 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold shrink-0">{c.avatar}</div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="flex items-center justify-between"><span className="text-[13px] font-semibold truncate">{c.name}</span><span className="text-[10px] mono text-[#5a5a5a]">{c.time}</span></div>
-                          <div className="text-[11.5px] text-[#7a7a7a] truncate mt-0.5">{c.lastMsg}</div>
-                          <div className="flex items-center gap-1.5 mt-1.5"><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-[#222] text-[#666] tracking-wide">{c.tag.toUpperCase()}</span><span className="text-[10px] text-[#555]">• {c.flavor}</span></div>
-                        </div>
-                        {c.unread>0 && <div className="w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold text-black self-center" style={{ background: ACCENT }}>{c.unread}</div>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1 flex flex-col bg-[#0b0b0b] min-w-0">
-                  <div className="h-[56px] border-b border-[#1c1c1c] bg-[#0f0f0f] flex items-center justify-between px-4">
-                    <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-[#1e1e1e] grid place-items-center text-[11px] font-bold">LH</div><div><div className="text-[13px] font-bold flex items-center gap-2">Lucía H. <span className="w-2 h-2 rounded-full bg-emerald-400" /></div><div className="text-[11px] text-[#666]">3815550124 • Amante del chocolate</div></div></div>
-                    <div className="flex items-center gap-1.5"><button onClick={() => showToast("Llamada WhatsApp iniciada")} className="h-8 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium flex items-center gap-1"><Phone size={12} /> Llamar</button><button onClick={() => showToast("Pedido movido a Pagado")} className="h-8 px-3 rounded-full text-black font-bold text-[11px] flex items-center gap-1" style={{ background: ACCENT }}><Check size={12} /> Marcar Pagado</button></div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                    {[{from:"them",text:"Hola! Quiero 3 de chocolate y 2 de limón, zona Centro",time:"14:22"},{from:"me",text:"¡Dale Lucía! 😊 Te armé el pedido:\n3 x chocolate ($7000) = $21000\n2 x limon ($5500) = $11000\nSubtotal: $32000\nEnvío CENTRO: GRATIS 🎉\n────────────────────────\nTotal: $32000\n¿Confirmo?",time:"14:23"},{from:"system",text:"Lucía confirmó — pedido #PED-42 • $32.000 • Pagado",time:"14:24"}].map((m,i)=>(
-                      <div key={i} className={`flex ${m.from==="me"?"justify-end":m.from==="system"?"justify-center":"justify-start"}`}>
-                        {m.from==="system" ? <div className="text-[11px] px-3 py-1.5 rounded-full bg-[#151515] border border-[#222] text-[#7a7a7a] mono">{m.text} • {m.time}</div> :
-                          <div className={`max-w-[68%] px-3.5 py-2.5 rounded-[18px] text-[13px] leading-[1.4] whitespace-pre-wrap ${m.from==="me"?"text-black rounded-br-[6px]":"bg-[#171717] border border-[#232323] text-[#e0e0e0] rounded-bl-[6px]"}`} style={m.from==="me"?{background:ACCENT}:{}}>{m.text}<div className={`text-[10px] mt-1 mono ${m.from==="me"?"text-black/60":"text-[#666]"}`}>{m.time} {m.from==="me"?"✓✓":""}</div></div>}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border-t border-[#1c1c1c] bg-[#0f0f0f]">
-                    <div className="flex items-center gap-2"><div className="flex-1 h-10 bg-[#121212] border border-[#1e1e1e] rounded-full flex items-center px-1"><input placeholder="Escribe un mensaje... usa / para atajos" className="flex-1 bg-transparent outline-none text-[13px] px-3 placeholder:text-[#555]" /><button onClick={() => showToast("Mensaje enviado")} className="w-8 h-8 rounded-full grid place-items-center text-black font-bold" style={{ background: ACCENT }}>↗</button></div></div>
-                    <div className="flex gap-1.5 mt-2">{["Precio $4.600","Alias brinines.mp","Retiro 18hs","Gracias 🥐"].map(s => <button key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-[#151515] border border-[#222] text-[#777] hover:text-[#c8c8c8]">{s}</button>)}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === "pipelines" && (
-              <div className="p-4 lg:p-6">
-                <div className="flex items-center justify-between mb-5 max-w-[1600px] mx-auto">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Embudo • Pedidos</div><div className="text-[12px] text-[#666] mt-1">Kanban Close CRM • Nuevo → Cotizado → Pagado → Horneando → Entregado</div></div>
-                  <div className="flex items-center gap-2"><span className="text-[11px] mono text-[#666] bg-[#121212] border border-[#1e1e1e] px-3 py-1.5 rounded-full">Total en embudo: $50.600 ARS</span><button onClick={() => showToast("Nuevo pedido creado")} className="h-8 px-3 rounded-full text-black font-bold text-[12px] flex items-center gap-1" style={{ background: ACCENT }}><Plus size={14} /> Nuevo pedido</button></div>
-                </div>
-                {pipelinesReal && <div className="text-[10px] mono text-[#8ab66a] bg-[#0f1a0a] border border-[#1e3a0f] px-2 py-1 rounded-full mb-2 inline-block">● Embudo real Supabase • {Object.values(pipelinesReal).flat().length} pedidos</div>}
-                <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto md:snap-x md:snap-mandatory pb-4 max-w-[1600px] mx-auto overflow-visible">
-                  {Object.entries(pipelinesReal||pipelines).map(([col, items]) => (
-                    <div key={col} className="w-full md:w-[260px] md:shrink-0 shrink-0 snap-start rounded-[16px] bg-[#101010] border border-[#1c1c1c] flex flex-col">
-                      <div className="p-3.5 flex items-center justify-between border-b border-[#1a1a1a]">
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: col==="Nuevo Lead"?"#6a6a6a":col==="Cotizado"?"#8a8a8a":col==="Pagado"?ACCENT:col==="Horneando"?"#ffd21f":"#6ee7b7" }} /><span className="text-[11px] font-bold tracking-[0.08em]">{col.toUpperCase()}</span><span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#1a1a1a] mono text-[#666]">{items.length}</span></div><span className="text-[#444]">⋯</span>
-                      </div>
-                      <div className="p-2 space-y-2 flex-1">
-                        {items.map(t => (
-                          <div key={t.name} className="rounded-[12px] bg-[#151515] border border-[#232323] p-3 hover:border-[#2a2a2a] hover:bg-[#191919] transition cursor-grab group">
-                            <div className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-[#1e1e1e] grid place-items-center text-[10px] font-bold">{t.initials}</div><span className="text-[12.5px] font-semibold">{t.name}</span></div><span className="text-[10px] mono text-[#666]">{t.time}</span></div>
-                            <div className="mt-2.5 flex items-center justify-between"><span className="text-[11px] px-2 py-1 rounded-full bg-[#101010] border border-[#1e1e1e] text-[#8a8a8a]">{t.flavor}</span><span className="text-[12px] font-bold mono">{t.amount}</span></div>
-                            <div className="mt-2.5 h-1 rounded-full bg-[#1a1a1a] overflow-hidden opacity-0 group-hover:opacity-100 transition"><div className="h-full w-[60%] rounded-full" style={{ background: ACCENT }} /></div>
-                          </div>
-                        ))}
-                        <button onClick={() => showToast(`Agregar en ${col}`)} className="w-full h-8 rounded-[10px] border border-dashed border-[#232323] text-[11px] text-[#555] hover:text-[#8a8a8a]">+ Agregar tarjeta</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tab === "automations" && (
-              <div className="p-4 lg:p-6 max-w-[1100px] mx-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Automatizaciones</div><div className="text-[12px] text-[#666] mt-1">4 flujos MOTOR-fidelity • 292 ejecuciones este mes • $48k atribuido • GHL Clone</div></div>
-                  <button onClick={() => showToast("Nueva automatización creada (demo)")} className="h-9 px-4 rounded-full text-black font-bold text-[13px]" style={{ background: ACCENT }}>+ Nueva automatización</button>
-                </div>
-                <div className="space-y-3">
-                  {automations.map(a => (
-                    <div key={a.name} className={`rounded-[16px] border p-4 flex items-center gap-4 transition ${a.active?"bg-[#121212] border-[#1e1e1e]":"bg-[#0f0f0f] border-[#161616] opacity-70"}`}>
-                      <div className={`w-10 h-10 rounded-[12px] grid place-items-center border ${a.active?"bg-[#151515] border-[#232323]":"bg-[#111] border-[#1a1a1a] text-[#555]"}`}><Zap size={16} /></div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2"><span className="text-[13.5px] font-bold">{a.name}</span><span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#6a6a6a] mono">{a.trigger}</span></div>
-                        <div className="text-[11.5px] text-[#6a6a6a] mt-1 leading-snug truncate">{a.desc}</div>
-                      </div>
-                      <div className="hidden md:flex items-center gap-6">
-                        <div className="text-right"><div className="text-[11px] text-[#5a5a5a] font-bold tracking-wide">EJECUCIONES</div><div className="text-[13px] font-bold mono">{a.runs}</div></div>
-                        <div className="text-right"><div className="text-[11px] text-[#5a5a5a] font-bold tracking-wide">CONV</div><div className="text-[13px] font-bold mono" style={{ color: a.active?ACCENT:"#666" }}>{a.conv}</div></div>
-                        <div className={`w-[44px] h-[26px] rounded-full p-[2px] flex ${a.active?"justify-end":"justify-start bg-[#1e1e1e] border border-[#2a2a2a]"}`} style={a.active?{background:ACCENT}:{}}><div className="w-[22px] h-[22px] rounded-full bg-white shadow-sm" style={a.active?{}:{background:"#3a3a3a"}} /></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 rounded-[14px] bg-[#0f1a0a] border border-[#1e3a0f] p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#12210a] border border-[#1e3a0f] grid place-items-center text-[12px]">🛡️</div>
-                  <div><div className="text-[12px] font-bold text-[#a3ff12]">MOTOR fidelity — 4 invasivas desactivadas</div><div className="text-[11px] text-[#8ab66a] mt-1">Churn 21d • Abandono 2h • Recurrencia 14d fija • Bienvenida masiva → reemplazadas por Segmentación silenciosa + Experimentos + Contenido orgánico. Filosofía Tucumán: no forzar venta.</div></div>
-                </div>
-              </div>
-            )}
-
-            {tab === "reporting" && (
-              <div className="p-4 lg:p-6 max-w-[1100px] mx-auto space-y-6">
-                <div><div className="text-[22px] font-extrabold tracking-[-0.02em]">Reportes</div><div className="text-[12px] text-[#666] mt-1">Atribución por automatización y canal • Últimos 30 días</div></div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">INGRESO POR AUTOMATIZACIÓN</div><div className="text-[28px] font-extrabold mt-2">$48.300 <span className="text-[14px] font-medium text-[#666]">ARS</span></div><div className="text-[11px] text-[#666] mt-1">67% del total viene de autos</div></div>
-                  <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">CANAL ORIGEN</div><div className="mt-4 space-y-3"><div><div className="flex justify-between text-[12px] mb-1"><span>Instagram Story</span><span className="mono">58%</span></div><div className="h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width:"58%", background: ACCENT }}/></div></div><div><div className="flex justify-between text-[12px] mb-1"><span>WhatsApp Directo</span><span className="mono">27%</span></div><div className="h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden"><div className="h-full bg-white rounded-full" style={{ width:"27%" }}/></div></div></div></div>
-                  <div className="rounded-[16px] p-5 border text-black" style={{ background: ACCENT, borderColor: `${ACCENT}50` }}><div className="text-[11px] font-bold tracking-wide text-black/60">RESUMEN MES</div><div className="text-[14px] font-bold mt-3 leading-snug">Tu automatización #1 (Story Reply) generó 34 leads extra sin esfuerzo.</div><button onClick={() => setTab("automations")} className="mt-4 h-8 px-4 rounded-full bg-black text-white text-[12px] font-bold">Revisar autos →</button></div>
-                </div>
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5"><div className="font-bold text-[13px]">Embudo completo</div><div className="mt-4 flex flex-col md:flex-row items-stretch gap-3">{[{label:"Visitas perfil",v:"1.240"},{label:"DMs",v:"201"},{label:"Cotizados",v:"67"},{label:"Pagados",v:"32"},{label:"Entregados",v:"27"}].map((f,i)=>(
-                  <div key={f.label} className="flex-1">
-                    <div className="text-[11px] text-[#666]">{f.label}</div><div className="text-[16px] font-bold mono mt-1">{f.v}</div><div className="h-1.5 bg-[#1a1a1a] rounded-full mt-2 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.max(24, 100 - i*18)}%`, background: i===3?ACCENT:"#fff" }}/></div>
-                  </div>
-                ))}</div></div>
-              </div>
-            )}
-
-            {tab === "calendar" && (
-              <div className="p-4 lg:p-6 max-w-[1100px] mx-auto">
-                <div className="text-[22px] font-extrabold tracking-[-0.02em]">Calendario • Horneadas</div><div className="text-[12px] text-[#666] mt-1 mb-6">Agenda de producción y entregas • Vista semanal • Google Calendar con alarma 60+10 min</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                  {[{day:"Lun 11",slots:[{time:"18:00",name:"Lucía H.",flavor:"Chocolate"}]},{day:"Mar 12",slots:[{time:"17:30",name:"Martina P.",flavor:"Banana"},{time:"19:00",name:"Camila N.",flavor:"2x Choco"}]},{day:"Mié 13",slots:[]},{day:"Jue 14",slots:[{time:"18:30",name:"Florencia T.",flavor:"3x Choco",hl:true}]},{day:"Vie 15",slots:[{time:"16:00",name:"Sofia G.",flavor:"Tradicional"}]},{day:"Sáb 16",slots:[{time:"10:00",name:"Agustina M.",flavor:"2x Limón"},{time:"11:30",name:"Valentina D.",flavor:"Limón"}]},{day:"Dom 17",slots:[],closed:true}].map(d => (
-                    <div key={d.day} className={`rounded-[14px] border p-3 min-h-[220px] ${d.closed?"bg-[#0a0a0a] border-[#141414]":"bg-[#121212] border-[#1e1e1e]"}`}>
-                      <div className="text-[11px] font-bold tracking-wide">{d.day.toUpperCase()}</div>
-                      <div className="mt-3 space-y-2">{d.slots.length===0 ? <div className="text-[11px] text-[#444] mt-8 text-center">{d.closed?"Cerrado • Descanso":"Sin horneadas"}</div> : d.slots.map(s=>(
-                        <div key={s.time} className={`rounded-[10px] p-2.5 border text-[11px] ${(s as {hl?:boolean}).hl?"border-[#3a3a0a] text-black":"bg-[#0f0f0f] border-[#1e1e1e] text-[#c8c8c8]"}`} style={(s as {hl?:boolean}).hl?{background:ACCENT}:{}}><div className="font-bold mono">{s.time}</div><div className="font-medium mt-0.5">{s.name}</div><div className={`text-[10px] ${(s as {hl?:boolean}).hl?"text-black/60":"text-[#666]"}`}>{s.flavor}</div></div>
-                      ))}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-xl bg-[#0f1a0a] border border-[#1e3a0f] px-4 py-3 flex items-center gap-2 text-[11px] text-[#8ab66a]"><Clock size={14} /> Google Calendar conectado — cada horneada crea evento con alarma 60 min + 10 min (popup nativo iPhone).</div>
-              </div>
-            )}
-
-            {tab === "contenido" && (
-              <div className="p-4 lg:p-6 max-w-[1100px] mx-auto space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div><div className="text-[22px] font-extrabold tracking-[-0.02em] flex items-center gap-2"><ImageIcon size={22} /> Contenido</div><div className="text-[12px] text-[#666] mt-1">Calendario editorial + generador IA stock-aware • Rescatado de Sheets Contenidos/Estrategias • IG Graph queue</div></div>
-                  <span className="text-[11px] mono px-3 py-1.5 rounded-full bg-[#121212] border border-[#1e1e1e] text-[#666]">IGQ token → POST /{`{ig_user_id}`}/media</span>
-                </div>
-
-                {/* Generador */}
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
-                  <div className="flex items-center gap-2 mb-4"><Wand2 size={16} className="text-[#a3ff12]" /><span className="font-bold text-[14px]">Generador con IA</span><span className="text-[11px] px-2 py-1 rounded-full bg-[#1a1a1a] border border-[#232323] text-[#777] mono">stock-aware • no inventa</span></div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div><label className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">SABOR</label><select value={saborGen} onChange={e=>setSaborGen(e.target.value)} className="mt-1 w-full h-9 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl px-3 text-[13px] outline-none"><option value="chocolate">Chocolate doble — BRN-CHO-04</option><option value="limon">Limón glaseado — BRN-LIM-01</option><option value="banana-chocolate">Banana con chocolate — BRN-BAN-03</option><option value="vainilla">Tradicional vainilla — BRN-TRA-02</option><option value="mixto">Mix — BRN-MIX-05</option></select></div>
-                    <div><label className="text-[11px] font-bold tracking-wide text-[#5a5a5a]">TONO</label><select value={tonoGen} onChange={e=>setTonoGen(e.target.value)} className="mt-1 w-full h-9 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl px-3 text-[13px] outline-none"><option value="cordial">Cordial</option><option value="humor">Con humor</option><option value="directo">Directo</option></select></div>
-                    <div className="flex items-end"><button onClick={generarCopy} disabled={generando} className="w-full h-9 rounded-xl text-black font-bold text-[13px] flex items-center justify-center gap-2 disabled:opacity-60" style={{background:ACCENT}}>{generando ? "Generando..." : <><Wand2 size={14}/> Generar copy</>}</button></div>
-                  </div>
-                  {previewCopy && (
-                    <div className="mt-4 rounded-xl bg-[#0f0f0f] border border-[#1e1e1e] p-4">
-                      <div className="text-[11px] font-bold tracking-wide text-[#5a5a5a] mb-2">PREVIEW COPY</div>
-                      <p className="text-[13px] leading-relaxed text-[#d8d8d8]">{previewCopy}</p>
-                      <div className="mt-3 flex gap-2"><button onClick={()=>showToast("Contenido programado → IG Graph queue (stub)")} className="h-8 px-4 rounded-full text-black font-bold text-[12px] flex items-center gap-1.5" style={{background:ACCENT}}><Clock size={12}/> Programar</button><button onClick={()=>showToast("Publicado ahora (demo)")} className="h-8 px-4 rounded-full bg-[#1a1a1a] border border-[#232323] text-[12px] font-medium flex items-center gap-1.5"><Send size={12}/> Publicar ahora</button></div>
-                      <p className="mt-2 text-[10px] mono text-[#444]">lib/engine/contenido.ts → obtenerContextoComercial() verifica stock antes de sugerir. Si stock 0 no programa. Guardado en contenidos {`{borrador/programado/publicado}`}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Calendario editorial week */}
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
-                  <div className="flex items-center justify-between mb-4"><span className="font-bold text-[14px]">Calendario editorial — esta semana</span><span className="text-[11px] mono text-[#666] bg-[#0f0f0f] border border-[#1e1e1e] px-2 py-1 rounded-full">Lun → Dom</span></div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                    {[
-                      {day:"Lun", sabor:"Chocolate", estado:"publicado", likes:12},
-                      {day:"Mar", sabor:"—", estado:"vacio"},
-                      {day:"Mié", sabor:"Limón", estado:"programado"},
-                      {day:"Jue", sabor:"Banana", estado:"borrador"},
-                      {day:"Vie", sabor:"Mix", estado:"programado"},
-                      {day:"Sáb", sabor:"Chocolate", estado:"borrador"},
-                      {day:"Dom", sabor:"—", estado:"cerrado"},
-                    ].map(d => (
-                      <div key={d.day} className={`rounded-[14px] border p-3 min-h-[140px] ${d.estado==="cerrado"?"bg-[#0a0a0a] border-[#141414]":d.estado==="publicado"?"bg-[#0f1a0a] border-[#1e3a0f]":d.estado==="programado"?"bg-[#0f0f0f] border-[#1e3a0f]":"bg-[#0f0f0f] border-[#1e1e1e]"}`}>
-                        <div className="text-[11px] font-bold tracking-wide flex items-center justify-between">{d.day.toUpperCase()} {d.estado==="publicado" && <span className="w-2 h-2 rounded-full bg-emerald-400"/>}</div>
-                        <div className="mt-3">
-                          {d.sabor==="—" ? <span className="text-[11px] text-[#444]">{d.estado==="cerrado"?"Cerrado":"Sin post"}</span> : (
-                            <>
-                              <div className="w-full h-16 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center text-[11px] text-[#666]">{d.sabor}</div>
-                              <div className="mt-2 text-[11px] font-medium">{d.sabor}</div>
-                              <span className={`mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-bold border ${d.estado==="publicado"?"bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]":d.estado==="programado"?"bg-[#1a1500] border-[#2a2200] text-[#ffd21f]":"bg-[#141414] border-[#222] text-[#777]"}`}>{d.estado.toUpperCase()}</span>
-                              {d.likes && <div className="mt-1 text-[10px] mono text-[#666]">♥ {d.likes} • reach 210</div>}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-            {tab === "ajustes" && (
-              <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-[22px] font-extrabold tracking-[-0.02em] flex items-center gap-2"><Settings size={22} /> Ajustes</div>
-                    <div className="text-[12px] text-[#666] mt-1">Gestión centralizada de conexiones e integraciones • Activar, desactivar, reconectar y verificar estado sin exponer secretos</div>
-                  </div>
-                  <span className="hidden md:inline text-[10px] mono px-2.5 py-1 rounded-full bg-[#121212] border border-[#1e1e1e] text-[#6a6a6a]">v1 • Registry escalable</span>
-                </div>
-
-                {/* Conexiones */}
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-bold text-[14px]">Conexiones</span>
-                    <span className="text-[11px] mono text-[#666] bg-[#0f0f0f] border border-[#1e1e1e] px-2 py-1 rounded-full">4 activas • registry.ts</span>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Google Calendar */}
-                    <div className="rounded-[14px] bg-[#0f0f0f] border border-[#1e1e1e] p-4 flex flex-col gap-3 overflow-hidden">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center"><Calendar size={16} className="text-[#a3ff12]" /></div>
-                          <div><div className="text-[13px] font-bold">Google Calendar</div><div className="text-[11px] text-[#666]">Horneadas → eventos 60+10 min</div></div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${connGoogle ? "bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]" : "bg-[#141414] border-[#222] text-[#777]"}`}>{connGoogle ? "CONECTADO" : "DESACTIVADO"}</span>
-                      </div>
-                      <div className="text-[11px] mono text-[#555]">Env: {maskSecret(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "")} • <span className="text-[#6a6a6a]">{connGoogle ? "Configurado" : "Pausado"}</span> • Última sync: {lastSync.google}</div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setConnGoogle(v=>!v)} className={`relative w-10 h-5 rounded-full transition ${connGoogle ? "bg-[#a3ff12]" : "bg-[#222] border border-[#2a2a2a]"}`} aria-label="Toggle Google"><span className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition ${connGoogle ? "left-[20px]" : "left-[2px] bg-[#666]"}`} /></button>
-                        <span className="text-[11px] font-medium text-[#8a8a8a]">{connGoogle ? "Activado" : "Desactivado"}</span>
-                        <div className="ml-auto flex gap-1.5">
-                          <button onClick={()=>showToast("Google OAuth stub — requiere GOOGLE_CLIENT_ID")} className="h-7 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium hover:bg-[#1e1e1e]">Reconectar</button>
-                          <button onClick={()=>probarConexion("google")} className="h-7 px-3 rounded-full text-black font-bold text-[11px]" style={{background:ACCENT}}>Probar</button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Instagram Graph */}
-                    <div className="rounded-[14px] bg-[#0f0f0f] border border-[#1e1e1e] p-4 flex flex-col gap-3 overflow-hidden">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center"><ImageIcon size={16} className="text-[#a3ff12]" /></div>
-                          <div><div className="text-[13px] font-bold">Instagram Graph</div><div className="text-[11px] text-[#666]">v20.0 • IG 462599807...</div></div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${connMeta ? "bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]" : "bg-[#141414] border-[#222] text-[#777]"}`}>{connMeta ? "CONECTADO" : "DESACTIVADO"}</span>
-                      </div>
-                      <div className="text-[11px] mono text-[#555]">ID: 462599807041091902815 • Token: {maskSecret(process.env.NEXT_PUBLIC_IG_ACCESS_TOKEN || "")} • Última sync: {lastSync.meta}</div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setConnMeta(v=>!v)} className={`relative w-10 h-5 rounded-full transition ${connMeta ? "bg-[#a3ff12]" : "bg-[#222] border border-[#2a2a2a]"}`} aria-label="Toggle Meta"><span className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition ${connMeta ? "left-[20px]" : "left-[2px] bg-[#666]"}`} /></button>
-                        <span className="text-[11px] font-medium text-[#8a8a8a]">{connMeta ? "Activado" : "Desactivado"}</span>
-                        <div className="ml-auto flex gap-1.5">
-                          <button onClick={()=>showToast("Meta OAuth stub — requiere IG_ACCESS_TOKEN")} className="h-7 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium hover:bg-[#1e1e1e]">Reconectar</button>
-                          <button onClick={()=>probarConexion("meta")} className="h-7 px-3 rounded-full text-black font-bold text-[11px]" style={{background:ACCENT}}>Probar</button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* WhatsApp */}
-                    <div className="rounded-[14px] bg-[#0f0f0f] border border-[#1e1e1e] p-4 flex flex-col gap-3 overflow-hidden">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center"><MessageSquare size={16} className="text-[#a3ff12]" /></div>
-                          <div><div className="text-[13px] font-bold">WhatsApp Cloud</div><div className="text-[11px] text-[#666]">Wa 5493813562078</div></div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${waConnected ? "bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]" : "bg-[#1a1500] border-[#2a2200] text-[#ffd21f]"}`}>{waConnected ? "CONECTADO" : "DESCONECTADO"}</span>
-                      </div>
-                      <div className="text-[11px] mono text-[#555]">Uso: 156/200 • Última sync: {lastSync.wa}</div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => {setWaConnected(v=>!v); showToast(!waConnected ? "WhatsApp conectado" : "WhatsApp desconectado");}} className={`relative w-10 h-5 rounded-full transition ${waConnected ? "bg-[#a3ff12]" : "bg-[#222] border border-[#2a2a2a]"}`} aria-label="Toggle WA"><span className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition ${waConnected ? "left-[20px]" : "left-[2px] bg-[#666]"}`} /></button>
-                        <span className="text-[11px] font-medium text-[#8a8a8a]">{waConnected ? "Activado" : "Desactivado"}</span>
-                        <div className="ml-auto flex gap-1.5">
-                          <button onClick={()=>showToast(waConnected ? "WhatsApp reconectado" : "Conectar WhatsApp — requiere token")} className="h-7 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium hover:bg-[#1e1e1e]">Reconectar</button>
-                          <button onClick={()=>probarConexion("wa")} className="h-7 px-3 rounded-full text-black font-bold text-[11px]" style={{background:ACCENT}}>Probar</button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Upstash */}
-                    <div className="rounded-[14px] bg-[#0f0f0f] border border-[#1e1e1e] p-4 flex flex-col gap-3 overflow-hidden">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-[10px] bg-[#1a1a1a] border border-[#232323] grid place-items-center"><Zap size={16} className="text-[#a3ff12]" /></div>
-                          <div><div className="text-[13px] font-bold">Upstash Redis</div><div className="text-[11px] text-[#666]">BullMQ • Queue</div></div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${connUpstash ? "bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]" : "bg-[#141414] border-[#222] text-[#777]"}`}>{connUpstash ? "CONECTADO" : "DESACTIVADO"}</span>
-                      </div>
-                      <div className="text-[11px] mono text-[#555]">Env: {maskSecret(process.env.NEXT_PUBLIC_UPSTASH_URL || "")} • Última sync: {lastSync.upstash}</div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setConnUpstash(v=>!v)} className={`relative w-10 h-5 rounded-full transition ${connUpstash ? "bg-[#a3ff12]" : "bg-[#222] border border-[#2a2a2a]"}`} aria-label="Toggle Upstash"><span className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition ${connUpstash ? "left-[20px]" : "left-[2px] bg-[#666]"}`} /></button>
-                        <span className="text-[11px] font-medium text-[#8a8a8a]">{connUpstash ? "Activado" : "Desactivado"}</span>
-                        <div className="ml-auto flex gap-1.5">
-                          <button onClick={()=>showToast("Upstash stub — requiere UPSTASH_REDIS_REST_URL")} className="h-7 px-3 rounded-full bg-[#1a1a1a] border border-[#232323] text-[11px] font-medium hover:bg-[#1e1e1e]">Reconectar</button>
-                          <button onClick={()=>probarConexion("upstash")} className="h-7 px-3 rounded-full text-black font-bold text-[11px]" style={{background:ACCENT}}>Probar</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 rounded-xl bg-[#0f1a0a] border border-[#1e3a0f] px-4 py-3 text-[11px] text-[#8ab66a] flex items-center gap-2"><Settings size={14} /> Registry escalable: agregar una conexión nueva = 1 entrada en <span className="mono bg-black/20 px-1.5 py-0.5 rounded">lib/connections/registry.ts</span> — UI la renderiza automáticamente.</div>
-                </div>
-
-                {/* Meta Panel */}
-                <div className="rounded-[16px] bg-[#121212] border border-[#1e1e1e] p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2"><ImageIcon size={18} className="text-[#a3ff12]" /><span className="font-bold text-[14px]">Meta — Panel de Control</span><span className="text-[11px] mono px-2 py-0.5 rounded-full bg-[#0f0f0f] border border-[#1e1e1e] text-[#666]">@brinines_</span></div>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${connMeta ? "bg-[#12210a] border-[#1e3a0f] text-[#a3ff12]" : "bg-[#141414] border-[#222] text-[#777]"}`}>{connMeta ? "VIVO" : "STUB"}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="rounded-[12px] bg-[#0f0f0f] border border-[#1e1e1e] p-3"><div className="text-[11px] text-[#666] mono">SEGUIDORES</div><div className="text-[18px] font-extrabold mt-1">201</div><div className="text-[10px] text-[#8ab66a]">+12 hoy</div></div>
-                    <div className="rounded-[12px] bg-[#0f0f0f] border border-[#1e1e1e] p-3"><div className="text-[11px] text-[#666] mono">ER</div><div className="text-[18px] font-extrabold mt-1">3.88%</div><div className="text-[10px] text-[#8a8a8a]">7.8 likes avg</div></div>
-                    <div className="rounded-[12px] bg-[#0f0f0f] border border-[#1e1e1e] p-3"><div className="text-[11px] text-[#666] mono">TOP POST</div><div className="text-[13px] font-bold mt-1">BRN-CHO-04</div><div className="text-[10px] text-[#8ab66a]">12 likes • 2 comments</div></div>
-                  </div>
-                  <div className="rounded-[12px] bg-[#0f0f0f] border border-[#1e1e1e] p-4">
-                    <div className="text-[12px] font-bold mb-2">Conexión Instagram Graph v20.0</div>
-                    <div className="text-[11px] mono text-[#555] space-y-1"><div>ID: 462599807041091902815 • Token: {maskSecret(process.env.NEXT_PUBLIC_IG_ACCESS_TOKEN || "")}</div><div>Estado: {connMeta ? "Configurado (stub hasta token real)" : "Pausado por Ajustes"} • Última sync: {lastSync.meta}</div></div>
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={()=>probarConexion("meta")} className="h-8 px-4 rounded-full text-black font-bold text-[12px]" style={{background:ACCENT}}>Probar conexión</button>
-                      <button onClick={()=>showToast("Meta inbox stub — 3 conversaciones cargadas")} className="h-8 px-4 rounded-full bg-[#1a1a1a] border border-[#232323] text-[12px] font-medium">Cargar conversaciones</button>
-                      <button onClick={()=>showToast("DM stub enviado")} className="h-8 px-4 rounded-full bg-[#1a1a1a] border border-[#232323] text-[12px] font-medium">Enviar DM prueba</button>
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-                      {[
-                        {name:"Florencia T.", msg:"Hola, quiero 3x Chocolate", time:"2m"},
-                        {name:"Lucia H.", msg:"¿Tienen stock de Limón?", time:"18m"},
-                        {name:"Sofia G.", msg:"Gracias! riquísimo", time:"1h"},
-                      ].map(c=>(
-                        <div key={c.name} className="rounded-[10px] bg-[#0a0a0a] border border-[#1a1a1a] p-3"><div className="text-[12px] font-semibold">{c.name}</div><div className="text-[11px] text-[#8a8a8a] truncate">{c.msg}</div><div className="text-[10px] mono text-[#555] mt-1">{c.time}</div></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+            {tab === "dashboard" && <DashboardView kpisReal={kpisReal} ordersReal={ordersReal} setTab={setTab} />}
+            {tab === "contacts" && <ContactsView contactsReal={contactsReal} showToast={showToast} />}
+            {tab === "conversations" && <ConversationsView conversationsReal={conversationsReal} inboxSource={inboxSource} showToast={showToast} />}
+            {tab === "pipelines" && <PipelinesView pipelinesReal={pipelinesReal} showToast={showToast} />}
+            {tab === "automations" && <AutomationsView showToast={showToast} />}
+            {tab === "reporting" && <ReportingView setTab={setTab} />}
+            {tab === "calendar" && <CalendarView />}
+            {tab === "contenido" && <ContenidoView saborGen={saborGen} setSaborGen={setSaborGen} tonoGen={tonoGen} setTonoGen={setTonoGen} previewCopy={previewCopy} generando={generando} onGenerar={generarCopy} showToast={showToast} />}
+            {tab === "ajustes" && <AjustesView connGoogle={connGoogle} setConnGoogle={setConnGoogle} connMeta={connMeta} setConnMeta={setConnMeta} connUpstash={connUpstash} setConnUpstash={setConnUpstash} waConnected={waConnected} setWaConnected={setWaConnected} lastSync={lastSync} maskSecret={maskSecret} showToast={showToast} probarConexion={probarConexion} />}
           </div>
           <div className="h-6 border-t border-[#141414] bg-[#0a0a0a] flex items-center justify-between px-4 text-[10px] mono text-[#3a3a3a]">
             <span>BRININES CRM v1 • GoHighLevel Clone • Dark Premium • $97/mo aesthetic • bru-brutal + Inter</span>

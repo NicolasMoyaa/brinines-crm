@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const hasToken = Boolean(process.env.IG_ACCESS_TOKEN || process.env.NEXT_PUBLIC_IG_ACCESS_TOKEN);
+  const hasToken = Boolean(process.env.IG_ACCESS_TOKEN);
   const igId = process.env.IG_USER_ID || "462599807041091902815";
   if (!hasToken) {
     return NextResponse.json({ status: "stub", configured: false, igId, message: "IG_ACCESS_TOKEN missing — stub" });
